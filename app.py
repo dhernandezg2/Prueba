@@ -84,28 +84,29 @@ if aplicar:
 
 df_filtrado = st.session_state.df_filtrado  # Recuperamos el dataframe persistente
 
-if df_filtrado is None and df is not None:
-    df_filtrado = df
-
 # CREACIÓN DE PESTAÑAS
 tab_general, tab_detalle = st.tabs(["Vista General", "Análisis Detallado"])
 
 with tab_general:
-    if df_filtrado is not None:
-        st.subheader(f"Resultados filtrados ({len(df_filtrado)} filas)")
-        st.dataframe(df_filtrado, width='stretch')
+    # Para la vista general, usamos el filtrado si existe, si no, el completo
+    df_general = df_filtrado if df_filtrado is not None else df
+    
+    if df_general is not None:
+        st.subheader(f"Resultados ({len(df_general)} filas)")
+        st.dataframe(df_general, width='stretch')
         
         st.divider()
         st.subheader("Resumen General")
-        fig_general = grafico_general_repostajes(df_filtrado)
+        fig_general = grafico_general_repostajes(df_general)
         if fig_general:
             st.plotly_chart(fig_general, width='stretch')
         else:
             st.info("No hay datos suficientes para generar el gráfico general.")
     else:
-        st.info("Por favor, carga un archivo y aplica los filtros para ver los datos.")
+        st.info("Por favor, carga un archivo para ver los datos.")
 
 with tab_detalle:
+    # Para el detalle, SOLO mostramos si hay filtros aplicados (df_filtrado no es None)
     if df_filtrado is not None and not df_filtrado.empty:
         # SELECCION DEL VEHICULO
         st.subheader("Analisis individual del vehiculo")
