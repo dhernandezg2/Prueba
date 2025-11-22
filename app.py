@@ -84,6 +84,9 @@ if aplicar:
 
 df_filtrado = st.session_state.df_filtrado  # Recuperamos el dataframe persistente
 
+if df_filtrado is None and df is not None:
+    df_filtrado = df
+
 # CREACIÓN DE PESTAÑAS
 tab_general, tab_detalle = st.tabs(["Vista General", "Análisis Detallado"])
 
