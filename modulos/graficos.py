@@ -75,7 +75,7 @@ def mapa_repostajes(df, vehiculo):
         if campo in df_vehiculo.columns:
             data[campo] = True
 
-    #Inicializamos la visualizacion del mapa
+    #Inicializamos la visualizacion del mapa con un estilo más oscuro y visual
     fig = px.scatter_mapbox(
         df_vehiculo,
         lat= "latitud",
@@ -84,16 +84,25 @@ def mapa_repostajes(df, vehiculo):
         size="repostado" if "repostado" in df_vehiculo.columns else None,
         hover_name= "direccion" if "direccion" in df_vehiculo.columns else None,
         hover_data= data if data else None,
-        size_max=16,
+        size_max=25, # Puntos un poco más grandes
         zoom=10,
         height=520,
-        title = f"puntos de repostaje del vehiculo {vehiculo}"
+        title = f"Puntos de repostaje del vehículo {vehiculo}",
+        color_continuous_scale=px.colors.sequential.Plasma_r # Escala de color vibrante
     )
 
     fig.update_layout(
-        mapbox_style = "open-street-map",
+        mapbox_style = "carto-darkmatter", # Estilo oscuro que encaja mejor con la app
         margin = dict(r=0, t=50, l=0, b=0),
-        coloraxis_colorbar=dict(title="Repostado" if "repostado" in df_vehiculo.columns else "")
+        paper_bgcolor='rgba(0,0,0,0)', # Fondo transparente
+        plot_bgcolor='rgba(0,0,0,0)',
+        font=dict(family="Inter, sans-serif", size=14, color="white"),
+        coloraxis_colorbar=dict(
+            title="Litros",
+            bgcolor="rgba(0,0,0,0)",
+            title_font_color="white",
+            tickfont_color="white"
+        )
     )
 
     return fig
