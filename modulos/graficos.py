@@ -74,18 +74,20 @@ def mapa_repostajes(df, vehiculo):
     view_state = pdk.ViewState(
         latitude=lat_center,
         longitude=lon_center,
-        zoom=14,
-        pitch=45, # Inclinación para ver en 3D
+        zoom=15,  # Mayor zoom para ver más detalle
+        pitch=60, # Inclinación más pronunciada para efecto 3D
         bearing=0
     )
 
-    # Capa de puntos de repostaje (ScatterplotLayer)
+    # Capa de puntos de repostaje con bordes para mejor visibilidad
     layer = pdk.Layer(
         "ScatterplotLayer",
         data=df_vehiculo,
         get_position='[longitud, latitud]',
-        get_color='[255, 100, 100, 200]', # Rojo brillante para contrastar con satélite
-        get_radius=80, # Radio en metros
+        get_color='[255, 50, 50, 220]', # Rojo intenso
+        get_radius=60, # Radio en metros
+        get_line_color=[255, 255, 255], # Borde blanco
+        line_width_min_pixels=2,
         pickable=True,
         auto_highlight=True
     )
@@ -93,12 +95,12 @@ def mapa_repostajes(df, vehiculo):
     # Tooltip personalizado
     tooltip = {
         "html": "<b>Dirección:</b> {direccion}<br/><b>Repostado:</b> {repostado} L",
-        "style": {"backgroundColor": "rgba(0,0,0,0.8)", "color": "white"}
+        "style": {"backgroundColor": "rgba(255,255,255,0.9)", "color": "#333", "border": "2px solid #ff3232"}
     }
 
-    # Creamos el objeto Deck con mapa satelital ESRI (no requiere API key)
+    # Mapa claro y legible (Carto Positron)
     r = pdk.Deck(
-        map_style="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+        map_style="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
         initial_view_state=view_state,
         layers=[layer],
         tooltip=tooltip
