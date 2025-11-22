@@ -96,9 +96,9 @@ def mapa_repostajes(df, vehiculo):
         "style": {"backgroundColor": "steelblue", "color": "white"}
     }
 
-    # Creamos el objeto Deck
+    # Creamos el objeto Deck con mapa base Carto Dark Matter (no requiere API key)
     r = pdk.Deck(
-        map_style="mapbox://styles/mapbox/dark-v10", # Estilo oscuro
+        map_style="https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
         initial_view_state=view_state,
         layers=[layer],
         tooltip=tooltip
