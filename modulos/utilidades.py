@@ -24,10 +24,10 @@ def set_animated_background():
     """
     st.markdown(page_bg_img, unsafe_allow_html=True)
 
-def set_star_background():
+@st.cache_data
+def get_star_css():
     """
-    Injects CSS to create a parallax star background similar to the CodePen example.
-    Generates random stars using Python instead of Sass.
+    Generates the CSS for the star background. Cached to prevent regeneration on every rerun.
     """
     def get_shadows(n):
         return ", ".join([f"{random.randint(0, 2000)}px {random.randint(0, 2000)}px #FFF" for _ in range(n)])
@@ -36,23 +36,29 @@ def set_star_background():
     shadows_medium = get_shadows(200)
     shadows_big = get_shadows(100)
 
-    page_bg_img = f"""
+    # Tiempos de animación mucho más lentos (200s, 300s, 400s)
+    return f"""
     <style>
-    /* Fondo general */
+    /* Fondo general - Forzamos el color de fondo */
     .stApp {{
-        background: radial-gradient(ellipse at bottom, #1B2735 0%, #090A0F 100%);
+        background: radial-gradient(ellipse at bottom, #1B2735 0%, #090A0F 100%) !important;
     }}
 
-    /* Contenedor fijo para las estrellas para que no afecte el scroll */
+    /* Contenedor fijo para las estrellas */
     .star-container {{
         position: fixed;
         top: 0;
         left: 0;
         width: 100%;
         height: 100%;
-        z-index: -1;
-        overflow: hidden;
-        pointer-events: none; /* Permite hacer clic a través de las estrellas */
+        z-index: 0; /* Cambiado de -1 a 0 para asegurar visibilidad, pero cuidado con tapar contenido */
+        pointer-events: none;
+    }}
+    
+    /* Ajustamos el z-index del contenido principal de Streamlit para que esté por encima */
+    .main .block-container {{
+        z-index: 1;
+        position: relative;
     }}
 
     #stars {{
@@ -60,7 +66,7 @@ def set_star_background():
         height: 1px;
         background: transparent;
         box-shadow: {shadows_small};
-        animation: animStar 50s linear infinite;
+        animation: animStar 200s linear infinite;
     }}
     #stars:after {{
         content: " ";
@@ -77,7 +83,7 @@ def set_star_background():
         height: 2px;
         background: transparent;
         box-shadow: {shadows_medium};
-        animation: animStar 100s linear infinite;
+        animation: animStar 300s linear infinite;
     }}
     #stars2:after {{
         content: " ";
@@ -94,7 +100,7 @@ def set_star_background():
         height: 3px;
         background: transparent;
         box-shadow: {shadows_big};
-        animation: animStar 150s linear infinite;
+        animation: animStar 400s linear infinite;
     }}
     #stars3:after {{
         content: " ";
@@ -118,4 +124,10 @@ def set_star_background():
         <div id="stars3"></div>
     </div>
     """
-    st.markdown(page_bg_img, unsafe_allow_html=True)
+
+def set_star_background():
+    """
+    Injects the cached CSS for the star background.
+    """
+    css = get_star_css()
+    st.markdown(css, unsafe_allow_html=True)
