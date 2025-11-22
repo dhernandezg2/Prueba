@@ -88,3 +88,49 @@ def mapa_repostajes(df, vehiculo):
     )
 
     return fig
+
+def grafico_general_repostajes(df):
+    """
+    Genera un gráfico de barras mostrando el total repostado por tipo de vehículo.
+    """
+    if df is None or df.empty:
+        return None
+    
+    # Verificar columnas necesarias
+    if "repostado" not in df.columns:
+        return None
+        
+    # Determinar columna de agrupación (tipo_vehiculo o vehiculo)
+    if "tipo_vehiculo" in df.columns:
+        col_grupo = "tipo_vehiculo"
+        titulo = "Total Repostado por Tipo de Vehículo"
+    elif "vehiculo" in df.columns:
+        col_grupo = "vehiculo"
+        titulo = "Total Repostado por Vehículo"
+    else:
+        return None
+
+    # Agrupar y sumar
+    df_agrupado = df.groupby(col_grupo)["repostado"].sum().reset_index()
+    
+    if df_agrupado.empty:
+        return None
+
+    # Crear gráfico de barras
+    fig = px.bar(
+        df_agrupado,
+        x=col_grupo,
+        y="repostado",
+        title=titulo,
+        color=col_grupo,
+        text_auto='.2s',
+        template="plotly_white"
+    )
+    
+    fig.update_layout(
+        xaxis_title=col_grupo.replace("_", " ").title(),
+        yaxis_title="Total Repostado (Litros)",
+        showlegend=False
+    )
+    
+    return fig

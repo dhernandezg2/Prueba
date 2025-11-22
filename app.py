@@ -6,8 +6,7 @@ if "df_filtrado" not in st.session_state:
 
 #Funciones externas
 from modulos.filtros import aplicar_filtros
-from modulos.graficos import Grafico_lineal_parametros
-from modulos.graficos import mapa_repostajes
+from modulos.graficos import Grafico_lineal_parametros, mapa_repostajes, grafico_general_repostajes
 from modulos.utilidades import set_star_background
 
 set_star_background()
@@ -92,6 +91,14 @@ with tab_general:
     if df_filtrado is not None:
         st.subheader(f"Resultados filtrados ({len(df_filtrado)} filas)")
         st.dataframe(df_filtrado, width='stretch')
+        
+        st.divider()
+        st.subheader("Resumen General")
+        fig_general = grafico_general_repostajes(df_filtrado)
+        if fig_general:
+            st.plotly_chart(fig_general, width='stretch')
+        else:
+            st.info("No hay datos suficientes para generar el gráfico general.")
     else:
         st.info("Por favor, carga un archivo y aplica los filtros para ver los datos.")
 
