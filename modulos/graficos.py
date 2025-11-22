@@ -85,7 +85,7 @@ def mapa_repostajes(df, vehiculo):
         hover_name= "direccion" if "direccion" in df_vehiculo.columns else None,
         hover_data= data if data else None,
         size_max=16,
-        zoom=20,
+        zoom=10,
         height=520,
         title = f"puntos de repostaje del vehiculo {vehiculo}"
     )
