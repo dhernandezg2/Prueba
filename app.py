@@ -125,31 +125,34 @@ with tab_detalle:
                 if len(vehiculos) == 0:
                     st.info("No hay vehiculos")
                 else:
-                    vehiculo_seleccionado = st.selectbox("Selecciona la matricula", vehiculos, index = 0)
+                    vehiculo_seleccionado = st.selectbox("Selecciona la matricula", vehiculos, index = None, placeholder="Selecciona una matrícula...")
                     
-                    df_vehiculo = df_filtrado[df_filtrado["vehiculo"].astype(str) == str(vehiculo_seleccionado)]
-                    st.dataframe(df_vehiculo, width='stretch')
+                    if vehiculo_seleccionado:
+                        df_vehiculo = df_filtrado[df_filtrado["vehiculo"].astype(str) == str(vehiculo_seleccionado)]
+                        st.dataframe(df_vehiculo, width='stretch')
 
-                    #Histogramas del vehiculo
-                    st.divider()
-                    st.subheader(f"Grafico lineal de {parametro} del vehiculo seleccionado")
+                        #Histogramas del vehiculo
+                        st.divider()
+                        st.subheader(f"Grafico lineal de {parametro} del vehiculo seleccionado")
 
-                    fig = Grafico_lineal_parametros(df_vehiculo, parametro)
+                        fig = Grafico_lineal_parametros(df_vehiculo, parametro)
 
-                    if fig:
-                        st.plotly_chart(fig, width='stretch')
+                        if fig:
+                            st.plotly_chart(fig, width='stretch')
+                        else:
+                            st.warning(f"No se generó el gráfico. Asegúrate de que el parámetro '{parametro}' exista en las columnas: {df_vehiculo.columns.tolist()}")
+
+                        st.divider()
+                        st.subheader(f"Mapa de repostajes del vehiculo {vehiculo_seleccionado}")
+
+                        fig_mapa = mapa_repostajes(df_vehiculo, vehiculo_seleccionado)
+
+                        if fig_mapa:
+                            st.plotly_chart(fig_mapa, width='stretch')
+                        else:
+                            st.warning("No se generó el gráfico")
                     else:
-                        st.warning(f"No se generó el gráfico. Asegúrate de que el parámetro '{parametro}' exista en las columnas: {df_vehiculo.columns.tolist()}")
-
-                    st.divider()
-                    st.subheader(f"Mapa de repostajes del vehiculo {vehiculo_seleccionado}")
-
-                    fig_mapa = mapa_repostajes(df_vehiculo, vehiculo_seleccionado)
-
-                    if fig_mapa:
-                        st.plotly_chart(fig_mapa, width='stretch')
-                    else:
-                        st.warning("No se generó el gráfico")
+                        st.info("Selecciona una matrícula para ver los detalles.")
 
     else:
         st.info("Aplica los filtros para ver los vehículos disponibles.")
