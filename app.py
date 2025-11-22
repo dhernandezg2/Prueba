@@ -8,6 +8,9 @@ if "df_filtrado" not in st.session_state:
 from modulos.filtros import aplicar_filtros
 from modulos.graficos import Grafico_lineal_parametros
 from modulos.graficos import mapa_repostajes
+from modulos.utilidades import set_animated_background
+
+set_animated_background()
 
 
 # CONFIGURACIÓN GENERAL 
