@@ -1,7 +1,7 @@
 import plotly.express as px
 
 #Histogramas para los diferentes parametros
-def Grafico_lineal_parametros(df,parametro):
+def Grafico_lineal_parametros(df, parametro):
 
     if df is None or df.empty:
         return None
@@ -12,6 +12,44 @@ def Grafico_lineal_parametros(df,parametro):
         return None
     
     #Filtramos por fecha para ordenarlas
+    if "fecha" in df.columns:
+        df = df.sort_values("fecha")
+        eje_x = "fecha"
+    else:
+        eje_x = df.index.name if df.index.name else "index"
+    
+    #Creamos el grafico de area suavizado (más estético)
+    fig = px.area(
+        df,
+        x = eje_x,
+        y = columna,
+        markers= True,
+        title = f"Evolución de {columna}",
+        color_discrete_sequence = ["#00CC96"] # Un color verde/turquesa brillante que resalta sobre oscuro
+    )
+
+    fig.update_traces(
+        line=dict(width=3, shape='spline'), # Línea curva suave
+        marker=dict(size=8, symbol='circle', line=dict(width=2, color='white')), # Marcadores más bonitos
+        fill='tozeroy' # Relleno hasta el eje Y
+    )
+    
+    fig.update_layout(
+        xaxis_title = "Fecha" if eje_x == "fecha" else "",
+        yaxis_title = columna.capitalize(),
+        template = "plotly_dark", # Tema oscuro para coincidir con el fondo
+        paper_bgcolor='rgba(0,0,0,0)', # Fondo transparente
+        plot_bgcolor='rgba(0,0,0,0)', # Fondo del gráfico transparente
+        hovermode="x unified", # Hover unificado para ver datos fácilmente
+        font=dict(family="Inter, sans-serif", size=14)
+    )
+
+    return fig
+
+#Mapa interactivo
+def mapa_repostajes(df, vehiculo):
+
+    if df is None or df.empty:
         return None
     
     #Validamos las columnas necesarias
