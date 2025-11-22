@@ -156,4 +156,3 @@ with tab_detalle:
 
     else:
         st.info("Aplica los filtros para ver los vehículos disponibles.")
-```
