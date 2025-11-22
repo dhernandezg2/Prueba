@@ -40,9 +40,14 @@ def get_star_css():
     return f"""
     <style>
     /* Fondo general - Forzamos el color de fondo */
-    .stApp {{
+    .stApp {
         background: radial-gradient(ellipse at bottom, #1B2735 0%, #090A0F 100%) !important;
-    }}
+    }
+
+    /* Hacer la barra lateral transparente */
+    [data-testid="stSidebar"] {
+        background-color: transparent !important;
+    }
 
     /* Contenedor fijo para las estrellas */
     .star-container {{
