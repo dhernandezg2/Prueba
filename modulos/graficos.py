@@ -74,8 +74,8 @@ def mapa_repostajes(df, vehiculo):
     view_state = pdk.ViewState(
         latitude=lat_center,
         longitude=lon_center,
-        zoom=12,
-        pitch=50, # Inclinación para ver en 3D
+        zoom=14,
+        pitch=45, # Inclinación para ver en 3D
         bearing=0
     )
 
@@ -84,8 +84,8 @@ def mapa_repostajes(df, vehiculo):
         "ScatterplotLayer",
         data=df_vehiculo,
         get_position='[longitud, latitud]',
-        get_color='[0, 255, 200, 160]', # Cian con transparencia
-        get_radius=100, # Radio en metros
+        get_color='[255, 100, 100, 200]', # Rojo brillante para contrastar con satélite
+        get_radius=80, # Radio en metros
         pickable=True,
         auto_highlight=True
     )
@@ -93,12 +93,12 @@ def mapa_repostajes(df, vehiculo):
     # Tooltip personalizado
     tooltip = {
         "html": "<b>Dirección:</b> {direccion}<br/><b>Repostado:</b> {repostado} L",
-        "style": {"backgroundColor": "steelblue", "color": "white"}
+        "style": {"backgroundColor": "rgba(0,0,0,0.8)", "color": "white"}
     }
 
-    # Creamos el objeto Deck con mapa base Carto Dark Matter (no requiere API key)
+    # Creamos el objeto Deck con mapa satelital ESRI (no requiere API key)
     r = pdk.Deck(
-        map_style="https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
+        map_style="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
         initial_view_state=view_state,
         layers=[layer],
         tooltip=tooltip
