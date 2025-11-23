@@ -85,7 +85,7 @@ def mapa_repostajes(df, vehiculo):
         data=df_vehiculo,
         get_position='[longitud, latitud]',
         get_color='[255, 50, 50, 220]', # Rojo intenso
-        get_radius=60, # Radio en metros
+        get_radius=20, # Radio en metros (más pequeño)
         get_line_color=[255, 255, 255], # Borde blanco
         line_width_min_pixels=2,
         pickable=True,
