@@ -174,3 +174,46 @@ def grafico_general_repostajes(df):
     )
     
     return fig
+
+def grafico_top_vehiculos(df, metrica="repostado", n=5):
+    """
+    Genera un gráfico de barras horizontal con el top N de vehículos según la métrica.
+    """
+    if df is None or df.empty:
+        return None
+    
+    metrica = metrica.lower()
+    if metrica not in df.columns or "vehiculo" not in df.columns:
+        return None
+
+    # Agrupar por vehículo y sumar la métrica
+    df_top = df.groupby("vehiculo")[metrica].sum().reset_index()
+    
+    # Ordenar descendente y coger los top N
+    df_top = df_top.sort_values(metrica, ascending=False).head(n)
+    
+    # Ordenar ascendente para que en el gráfico horizontal el mayor salga arriba (Plotly lo dibuja de abajo a arriba)
+    df_top = df_top.sort_values(metrica, ascending=True)
+
+    titulo = f"Top {n} Vehículos por {metrica.capitalize()}"
+    color_scale = "Viridis" if metrica == "repostado" else "Magma"
+
+    fig = px.bar(
+        df_top,
+        x=metrica,
+        y="vehiculo",
+        orientation='h',
+        title=titulo,
+        text_auto='.2s',
+        color=metrica,
+        color_continuous_scale=color_scale
+    )
+
+    fig.update_layout(
+        xaxis_title=metrica.capitalize(),
+        yaxis_title="Vehículo",
+        template="plotly_white",
+        showlegend=False
+    )
+
+    return fig

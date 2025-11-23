@@ -6,7 +6,7 @@ if "df_filtrado" not in st.session_state:
 
 #Funciones externas
 from modulos.filtros import aplicar_filtros
-from modulos.graficos import Grafico_lineal_parametros, mapa_repostajes, grafico_general_repostajes
+from modulos.graficos import Grafico_lineal_parametros, mapa_repostajes, grafico_general_repostajes, grafico_top_vehiculos
 from modulos.utilidades import set_star_background
 
 set_star_background()
@@ -102,6 +102,32 @@ with tab_general:
             st.plotly_chart(fig_general, width='stretch')
         else:
             st.info("No hay datos suficientes para generar el gráfico general.")
+
+        st.divider()
+        st.subheader("Top Vehículos")
+        
+        n_top = st.slider("Número de vehículos a mostrar", 1, 20, 5)
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            fig_top_repostado = grafico_top_vehiculos(df_general, "repostado", n_top)
+            if fig_top_repostado:
+                st.plotly_chart(fig_top_repostado, use_container_width=True)
+            else:
+                st.info("No hay datos de repostaje.")
+                
+        with col2:
+            # Verificamos si existe la columna distancia
+            if "distancia" in df_general.columns:
+                fig_top_distancia = grafico_top_vehiculos(df_general, "distancia", n_top)
+                if fig_top_distancia:
+                    st.plotly_chart(fig_top_distancia, use_container_width=True)
+                else:
+                    st.info("No hay datos de distancia.")
+            else:
+                st.info("La columna 'distancia' no está disponible en los datos.")
+
     else:
         st.info("Por favor, carga un archivo para ver los datos.")
 
