@@ -82,7 +82,7 @@ def mapa_repostajes(df, vehiculo, estilo="Claro"):
     # Capas del mapa
     layers = []
 
-    # Si es satélite, añadimos la capa de imágenes satelitales como base
+    # Si es satélite (ahora llamado "Oscuro" por el usuario), añadimos la capa de imágenes satelitales como base
     if estilo == "Oscuro":
         satellite_layer = pdk.Layer(
             "TileLayer",
@@ -90,12 +90,13 @@ def mapa_repostajes(df, vehiculo, estilo="Claro"):
             min_zoom=0,
             max_zoom=19,
             tileSize=256,
-            render_sub_layers=True
+            render_sub_layers=True,
+            refinement_strategy="no-overlap" # Estrategia para evitar errores de renderizado
         )
         layers.append(satellite_layer)
         map_style = None # No usamos estilo base de mapbox/carto
     else:
-        # Por defecto Claro 3D (Carto Positron)
+        # Por defecto Claro (Carto Positron)
         map_style = "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
 
     # Capa de puntos de repostaje (siempre encima)
