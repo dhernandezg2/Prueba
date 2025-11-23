@@ -155,7 +155,7 @@ with tab_detalle:
                         fig_mapa = mapa_repostajes(df_vehiculo, vehiculo_seleccionado, estilo=estilo_mapa)
 
                         if fig_mapa:
-                            st.pydeck_chart(fig_mapa)
+                            st.pydeck_chart(fig_mapa, key=f"mapa_{estilo_mapa}")
                         else:
                             st.warning("No se generó el gráfico")
                     else:
