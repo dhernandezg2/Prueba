@@ -148,7 +148,7 @@ with tab_detalle:
                         # Selector de estilo de mapa
                         estilo_mapa = st.radio(
                             "Estilo del mapa:",
-                            ["Claro 3D", "Satélite"],
+                            ["Claro", "Oscuro"],
                             horizontal=True
                         )
 
