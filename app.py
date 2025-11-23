@@ -145,7 +145,14 @@ with tab_detalle:
                         st.divider()
                         st.subheader(f"Mapa de repostajes del vehiculo {vehiculo_seleccionado}")
 
-                        fig_mapa = mapa_repostajes(df_vehiculo, vehiculo_seleccionado)
+                        # Selector de estilo de mapa
+                        estilo_mapa = st.radio(
+                            "Estilo del mapa:",
+                            ["Claro 3D", "Satélite"],
+                            horizontal=True
+                        )
+
+                        fig_mapa = mapa_repostajes(df_vehiculo, vehiculo_seleccionado, estilo=estilo_mapa)
 
                         if fig_mapa:
                             st.pydeck_chart(fig_mapa)

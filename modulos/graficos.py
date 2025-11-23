@@ -48,7 +48,7 @@ def Grafico_lineal_parametros(df, parametro):
     return fig
 
 #Mapa interactivo 3D con Pydeck
-def mapa_repostajes(df, vehiculo):
+def mapa_repostajes(df, vehiculo, estilo="Claro 3D"):
 
     if df is None or df.empty:
         return None
@@ -98,9 +98,16 @@ def mapa_repostajes(df, vehiculo):
         "style": {"backgroundColor": "rgba(255,255,255,0.9)", "color": "#333", "border": "2px solid #ff3232"}
     }
 
+    # Seleccionamos el estilo del mapa
+    if estilo == "Satélite":
+        map_style = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+    else:
+        # Por defecto Claro 3D (Carto Positron)
+        map_style = "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
+
     # Mapa claro y legible (Carto Positron)
     r = pdk.Deck(
-        map_style="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
+        map_style=map_style,
         initial_view_state=view_state,
         layers=[layer],
         tooltip=tooltip
