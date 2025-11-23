@@ -79,8 +79,27 @@ def mapa_repostajes(df, vehiculo, estilo="Claro 3D"):
         bearing=0
     )
 
-    # Capa de puntos de repostaje con bordes para mejor visibilidad
-    layer = pdk.Layer(
+    # Capas del mapa
+    layers = []
+
+    # Si es satélite, añadimos la capa de imágenes satelitales como base
+    if estilo == "Satélite":
+        satellite_layer = pdk.Layer(
+            "TileLayer",
+            data="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+            min_zoom=0,
+            max_zoom=19,
+            tileSize=256,
+            render_sub_layers=True
+        )
+        layers.append(satellite_layer)
+        map_style = None # No usamos estilo base de mapbox/carto
+    else:
+        # Por defecto Claro 3D (Carto Positron)
+        map_style = "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
+
+    # Capa de puntos de repostaje (siempre encima)
+    points_layer = pdk.Layer(
         "ScatterplotLayer",
         data=df_vehiculo,
         get_position='[longitud, latitud]',
@@ -91,6 +110,7 @@ def mapa_repostajes(df, vehiculo, estilo="Claro 3D"):
         pickable=True,
         auto_highlight=True
     )
+    layers.append(points_layer)
 
     # Tooltip personalizado
     tooltip = {
@@ -98,18 +118,11 @@ def mapa_repostajes(df, vehiculo, estilo="Claro 3D"):
         "style": {"backgroundColor": "rgba(255,255,255,0.9)", "color": "#333", "border": "2px solid #ff3232"}
     }
 
-    # Seleccionamos el estilo del mapa
-    if estilo == "Satélite":
-        map_style = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-    else:
-        # Por defecto Claro 3D (Carto Positron)
-        map_style = "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
-
-    # Mapa claro y legible (Carto Positron)
+    # Creamos el objeto Deck
     r = pdk.Deck(
         map_style=map_style,
         initial_view_state=view_state,
-        layers=[layer],
+        layers=layers,
         tooltip=tooltip
     )
 
