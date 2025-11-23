@@ -48,7 +48,7 @@ def Grafico_lineal_parametros(df, parametro):
     return fig
 
 #Mapa interactivo 3D con Pydeck
-def mapa_repostajes(df, vehiculo, estilo="Claro 3D"):
+def mapa_repostajes(df, vehiculo, estilo="Claro"):
 
     if df is None or df.empty:
         return None
@@ -83,7 +83,7 @@ def mapa_repostajes(df, vehiculo, estilo="Claro 3D"):
     layers = []
 
     # Si es satélite, añadimos la capa de imágenes satelitales como base
-    if estilo == "Satélite":
+    if estilo == "Oscuro":
         satellite_layer = pdk.Layer(
             "TileLayer",
             data="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
