@@ -115,7 +115,7 @@ with tab_general:
         st.subheader("Resumen General")
         fig_general = grafico_general_repostajes(df)
         if fig_general:
-            st.plotly_chart(fig_general, width='stretch')
+            st.plotly_chart(fig_general, use_container_width=True, key="chart_general")
         else:
             st.info("No hay datos suficientes para generar el gráfico general.")
 
@@ -157,7 +157,7 @@ with tab_filtrada:
         st.subheader("Resumen Filtrado")
         fig_filtrado = grafico_general_repostajes(df_filtrado)
         if fig_filtrado:
-            st.plotly_chart(fig_filtrado, width='stretch')
+            st.plotly_chart(fig_filtrado, use_container_width=True, key="chart_filtrado")
         else:
             st.info("No hay datos suficientes para generar el gráfico filtrado.")
             
