@@ -129,7 +129,7 @@ with tab_general:
         with col1:
             fig_top_repostado = grafico_top_vehiculos(df, "repostado", n_top)
             if fig_top_repostado:
-                st.plotly_chart(fig_top_repostado, use_container_width=True)
+                st.plotly_chart(fig_top_repostado, use_container_width=True, key="chart_top_repostado_general")
             else:
                 st.info("No hay datos de repostaje.")
                 
@@ -138,7 +138,7 @@ with tab_general:
             if "distancia" in df.columns:
                 fig_top_distancia = grafico_top_vehiculos(df, "distancia", n_top)
                 if fig_top_distancia:
-                    st.plotly_chart(fig_top_distancia, use_container_width=True)
+                    st.plotly_chart(fig_top_distancia, use_container_width=True, key="chart_top_distancia_general")
                 else:
                     st.info("No hay datos de distancia.")
             else:
@@ -171,7 +171,7 @@ with tab_filtrada:
         with col1_f:
             fig_top_repostado_f = grafico_top_vehiculos(df_filtrado, "repostado", n_top_filt)
             if fig_top_repostado_f:
-                st.plotly_chart(fig_top_repostado_f, use_container_width=True)
+                st.plotly_chart(fig_top_repostado_f, use_container_width=True, key="chart_top_repostado_filtrado")
             else:
                 st.info("No hay datos de repostaje.")
                 
@@ -179,7 +179,7 @@ with tab_filtrada:
             if "distancia" in df_filtrado.columns:
                 fig_top_distancia_f = grafico_top_vehiculos(df_filtrado, "distancia", n_top_filt)
                 if fig_top_distancia_f:
-                    st.plotly_chart(fig_top_distancia_f, use_container_width=True)
+                    st.plotly_chart(fig_top_distancia_f, use_container_width=True, key="chart_top_distancia_filtrado")
                 else:
                     st.info("No hay datos de distancia.")
             else:
@@ -225,7 +225,7 @@ with tab_vehiculo:
                     fig = Grafico_lineal_parametros(df_vehiculo, parametro)
 
                     if fig:
-                        st.plotly_chart(fig, width='stretch')
+                        st.plotly_chart(fig, use_container_width=True, key="chart_lineal_vehiculo")
                     else:
                         st.warning(f"No se generó el gráfico. Asegúrate de que el parámetro '{parametro}' exista.")
 
