@@ -75,7 +75,8 @@ if aplicar:
             tipos_combustible = tipos_combustible,
             lugar = lugar,
             parametro = parametro,
-            rango = rango_valores
+            rango = rango_valores,
+            fechas = rango_fechas
             )
         st.session_state.df_filtrado = df_filtrado
 
