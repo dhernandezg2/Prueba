@@ -113,7 +113,7 @@ def filtro_direccion(df, lugar):
     if not lugar:
         return df
     
-    return df[df["direccion"].astype(str).str.contains(str(lugar), case = False, na = False)]
+    return df[df["direccion"].isin(lugar)]
 
 
 #Filtra el dataframe segun el rango de fechas

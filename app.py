@@ -42,9 +42,26 @@ st.sidebar.divider()
 
 # FILTROS LATERALES
 st.sidebar.header("Filtros")
-tipos_vehiculo = st.sidebar.multiselect("Tipo de vehículo", ["Furgoneta", "Camión", "Sedán"])  #tipos de vehículo
-tipos_combustible = st.sidebar.multiselect("Tipo de combustible", ["Gasóleo", "Gasolina 95", "Diésel"])  #tipos de combustible
-lugar = st.sidebar.text_input("Dirección") #Direccion
+
+# Inicializar opciones vacías
+opciones_tipo_vehiculo = []
+opciones_tipo_combustible = []
+opciones_direccion = []
+
+if df is not None:
+    # Obtener valores únicos si existen las columnas
+    if "tipo_vehiculo" in df.columns:
+        opciones_tipo_vehiculo = sorted(df["tipo_vehiculo"].dropna().unique())
+    
+    if "tipo_combustible" in df.columns:
+        opciones_tipo_combustible = sorted(df["tipo_combustible"].dropna().unique())
+        
+    if "direccion" in df.columns:
+        opciones_direccion = sorted(df["direccion"].astype(str).dropna().unique())
+
+tipos_vehiculo = st.sidebar.multiselect("Tipo de vehículo", opciones_tipo_vehiculo)
+tipos_combustible = st.sidebar.multiselect("Tipo de combustible", opciones_tipo_combustible)
+lugar = st.sidebar.multiselect("Dirección", opciones_direccion)
 
 parametro = st.sidebar.selectbox("Parámetro", ["repostado", "distancia", "consumo"])
 
@@ -67,7 +84,7 @@ if aplicar:
     #Aplicamos los filtros de la columna de la izquierda.
     if df is not None:
 
-        lugar = (lugar or "").strip() or None
+
 
         df_filtrado = aplicar_filtros(
             df,
