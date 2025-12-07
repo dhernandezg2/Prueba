@@ -156,21 +156,26 @@ def grafico_general_repostajes(df):
     if df_agrupado.empty:
         return None
 
-    # Crear gráfico de barras
-    fig = px.bar(
+    # Crear gráfico de tarta (pie chart)
+    fig = px.pie(
         df_agrupado,
-        x=col_grupo,
-        y="repostado",
+        values="repostado",
+        names=col_grupo,
         title=titulo,
-        color=col_grupo,
-        text_auto='.2s',
-        template="plotly_white"
+        hole=0.4, # Donut chart para estética moderna
+        color_discrete_sequence=px.colors.qualitative.Vivid # Colores vibrantes
+    )
+    
+    fig.update_traces(
+        textposition='inside', 
+        textinfo='percent+label'
     )
     
     fig.update_layout(
-        xaxis_title=col_grupo.replace("_", " ").title(),
-        yaxis_title="Total Repostado (Litros)",
-        showlegend=False
+        template="plotly_dark", # Tema oscuro para coincidir con el fondo de estrellas
+        paper_bgcolor='rgba(0,0,0,0)',
+        showlegend=True,
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
     )
     
     return fig
