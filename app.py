@@ -43,7 +43,7 @@ st.sidebar.divider()
 # FILTROS LATERALES
 @st.fragment
 def mostrar_filtros_laterales(df):
-    st.sidebar.header("Filtros")
+    st.header("Filtros")
 
     # Inicializar opciones vacías
     # Inicializar variables de selección desde session_state si existen para usar en el filtrado cruzado
@@ -88,11 +88,11 @@ def mostrar_filtros_laterales(df):
 
     # Renderizar los widgets con las opciones calculadas y usar keys para persistencia
     # Nota: Streamlit elimina automáticamente opciones seleccionadas que ya no están en la lista de opciones (parametro 'options')
-    tipos_vehiculo = st.sidebar.multiselect("Tipo de vehículo", options=opciones_tipo_vehiculo, key="filter_vehiculo")
-    tipos_combustible = st.sidebar.multiselect("Tipo de combustible", options=opciones_tipo_combustible, key="filter_combustible")
-    lugar = st.sidebar.multiselect("Dirección", options=opciones_direccion, key="filter_direccion")
+    tipos_vehiculo = st.multiselect("Tipo de vehículo", options=opciones_tipo_vehiculo, key="filter_vehiculo")
+    tipos_combustible = st.multiselect("Tipo de combustible", options=opciones_tipo_combustible, key="filter_combustible")
+    lugar = st.multiselect("Dirección", options=opciones_direccion, key="filter_direccion")
 
-    parametro = st.sidebar.selectbox("Parámetro", ["repostado", "distancia", "consumo"])
+    parametro = st.selectbox("Parámetro", ["repostado", "distancia", "consumo"])
 
     #Hacemos que los rangos sean dinamicos y no sean siempre 0 - 100 (para los valores numericos)
     if df is not None and parametro.lower() in df.columns:
@@ -101,11 +101,11 @@ def mostrar_filtros_laterales(df):
     else:
         min_val, max_val = 0, 100
 
-    rango_valores = st.sidebar.slider("Rango de valores", min_val, max_val, (min_val, max_val))
+    rango_valores = st.slider("Rango de valores", min_val, max_val, (min_val, max_val))
 
-    rango_fechas = st.sidebar.date_input("Rango de fechas", [])
+    rango_fechas = st.date_input("Rango de fechas", [])
 
-    aplicar = st.sidebar.button("Aplicar filtros")
+    aplicar = st.button("Aplicar filtros")
 
     if aplicar:
         # Guardamos el parámetro actual para usarlo fuera del fragmento
@@ -126,7 +126,8 @@ def mostrar_filtros_laterales(df):
             st.rerun()
 
 # Llamada a la función de fragmento
-mostrar_filtros_laterales(df)
+with st.sidebar:
+    mostrar_filtros_laterales(df)
 
 # Recuperamos variables clave del estado para el resto de la app
 if "parametro_actual" not in st.session_state:
