@@ -156,8 +156,14 @@ def grafico_general_repostajes(df, indices_adestacar=None):
     if df_agrupado.empty:
         return None
     
+    
     # Ordenar por valor descendente para consistencia visual y de índices
     df_agrupado = df_agrupado.sort_values(by="repostado", ascending=False)
+
+    # Calcular porcentaje fijo relativo al total del dataframe (la vista actual)
+    # Esto asegura que si se ocultan segmentos o se hace pop-out, el porcentaje mostrado es el original
+    total_repostado = df_agrupado["repostado"].sum()
+    df_agrupado["porcentaje_fijo"] = df_agrupado["repostado"] / total_repostado
 
     # Crear gráfico de tarta (pie chart)
     fig = px.pie(
@@ -166,12 +172,16 @@ def grafico_general_repostajes(df, indices_adestacar=None):
         names=col_grupo,
         title=titulo,
         hole=0.4, # Donut chart para estética moderna
-        color_discrete_sequence=px.colors.qualitative.Vivid # Colores vibrantes
+        color_discrete_sequence=px.colors.qualitative.Vivid, # Colores vibrantes
+        custom_data=["porcentaje_fijo"] # Pasamos el porcentaje fijo como dato personalizado
     )
     
     fig.update_traces(
         textposition='inside', 
-        textinfo='percent+label'
+        # Usamos texttemplate para mostrar la etiqueta y el porcentaje fijo formateado
+        # %{label} es el nombre del segmento
+        # %{customdata[0]:.1%} formatea el primer elemento de custom_data como porcentaje con 1 decimal
+        texttemplate='%{label}<br>%{customdata[0]:.1%}' 
     )
     
     # Aplicar efecto de "pull" (resaltado) si hay índices seleccionados
