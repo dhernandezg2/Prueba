@@ -41,91 +41,99 @@ else:
 st.sidebar.divider()
 
 # FILTROS LATERALES
-st.sidebar.header("Filtros")
+@st.fragment
+def mostrar_filtros_laterales(df):
+    st.sidebar.header("Filtros")
 
-# Inicializar opciones vacías
-# Inicializar variables de selección desde session_state si existen para usar en el filtrado cruzado
-# Esto permite que el filtrado sea bidireccional (Vehículo <-> Combustible <-> Dirección)
+    # Inicializar opciones vacías
+    # Inicializar variables de selección desde session_state si existen para usar en el filtrado cruzado
+    # Esto permite que el filtrado sea bidireccional (Vehículo <-> Combustible <-> Dirección)
 
-sel_vehiculos = st.session_state.get("filter_vehiculo", [])
-sel_combustibles = st.session_state.get("filter_combustible", [])
-sel_direcciones = st.session_state.get("filter_direccion", [])
+    sel_vehiculos = st.session_state.get("filter_vehiculo", [])
+    sel_combustibles = st.session_state.get("filter_combustible", [])
+    sel_direcciones = st.session_state.get("filter_direccion", [])
 
-# Función auxiliar para obtener opciones válidas
-def obtener_opciones_validas(df, col_objetivo, filtros_dict):
-    if df is None:
+    # Función auxiliar para obtener opciones válidas
+    def obtener_opciones_validas(df, col_objetivo, filtros_dict):
+        if df is None:
+            return []
+        
+        df_temp = df.copy()
+        for col, valores in filtros_dict.items():
+            if valores and col in df_temp.columns:
+                df_temp = df_temp[df_temp[col].isin(valores)]
+                
+        if col_objetivo in df_temp.columns:
+            return sorted(df_temp[col_objetivo].dropna().unique())
         return []
-    
-    df_temp = df.copy()
-    for col, valores in filtros_dict.items():
-        if valores and col in df_temp.columns:
-            df_temp = df_temp[df_temp[col].isin(valores)]
-            
-    if col_objetivo in df_temp.columns:
-        return sorted(df_temp[col_objetivo].dropna().unique())
-    return []
 
-# Calcular opciones disponibles para cada filtro basado en los OTROS filtros seleccionados
-if df is not None:
-    opciones_tipo_vehiculo = obtener_opciones_validas(df, "tipo_vehiculo", {
-        "tipo_combustible": sel_combustibles,
-        "direccion": sel_direcciones
-    })
-    
-    opciones_tipo_combustible = obtener_opciones_validas(df, "tipo_combustible", {
-        "tipo_vehiculo": sel_vehiculos,
-        "direccion": sel_direcciones
-    })
-    
-    opciones_direccion = obtener_opciones_validas(df, "direccion", {
-        "tipo_vehiculo": sel_vehiculos,
-        "tipo_combustible": sel_combustibles
-    })
-else:
-    opciones_tipo_vehiculo, opciones_tipo_combustible, opciones_direccion = [], [], []
-
-# Renderizar los widgets con las opciones calculadas y usar keys para persistencia
-# Nota: Streamlit elimina automáticamente opciones seleccionadas que ya no están en la lista de opciones (parametro 'options')
-tipos_vehiculo = st.sidebar.multiselect("Tipo de vehículo", options=opciones_tipo_vehiculo, key="filter_vehiculo")
-tipos_combustible = st.sidebar.multiselect("Tipo de combustible", options=opciones_tipo_combustible, key="filter_combustible")
-lugar = st.sidebar.multiselect("Dirección", options=opciones_direccion, key="filter_direccion")
-
-parametro = st.sidebar.selectbox("Parámetro", ["repostado", "distancia", "consumo"])
-
-
-#Hacemos que los rangos sean dinamicos y no sean siempre 0 - 100 (para los valores numericos)
-if df is not None and parametro.lower() in df.columns:
-    min_val = float(df[parametro.lower()].min())
-    max_val = float(df[parametro.lower()].max())
-else:
-    min_val, max_val = 0, 100
-
-rango_valores = st.sidebar.slider("Rango de valores", min_val, max_val, (min_val, max_val))
-
-rango_fechas = st.sidebar.date_input("Rango de fechas", [])
-
-aplicar = st.sidebar.button("Aplicar filtros")
-
-if aplicar:
-
-    #Aplicamos los filtros de la columna de la izquierda.
+    # Calcular opciones disponibles para cada filtro basado en los OTROS filtros seleccionados
     if df is not None:
+        opciones_tipo_vehiculo = obtener_opciones_validas(df, "tipo_vehiculo", {
+            "tipo_combustible": sel_combustibles,
+            "direccion": sel_direcciones
+        })
+        
+        opciones_tipo_combustible = obtener_opciones_validas(df, "tipo_combustible", {
+            "tipo_vehiculo": sel_vehiculos,
+            "direccion": sel_direcciones
+        })
+        
+        opciones_direccion = obtener_opciones_validas(df, "direccion", {
+            "tipo_vehiculo": sel_vehiculos,
+            "tipo_combustible": sel_combustibles
+        })
+    else:
+        opciones_tipo_vehiculo, opciones_tipo_combustible, opciones_direccion = [], [], []
 
+    # Renderizar los widgets con las opciones calculadas y usar keys para persistencia
+    # Nota: Streamlit elimina automáticamente opciones seleccionadas que ya no están en la lista de opciones (parametro 'options')
+    tipos_vehiculo = st.sidebar.multiselect("Tipo de vehículo", options=opciones_tipo_vehiculo, key="filter_vehiculo")
+    tipos_combustible = st.sidebar.multiselect("Tipo de combustible", options=opciones_tipo_combustible, key="filter_combustible")
+    lugar = st.sidebar.multiselect("Dirección", options=opciones_direccion, key="filter_direccion")
 
+    parametro = st.sidebar.selectbox("Parámetro", ["repostado", "distancia", "consumo"])
 
-        df_filtrado = aplicar_filtros(
-            df,
-            tipos_vehiculo = tipos_vehiculo,
-            tipos_combustible = tipos_combustible,
-            lugar = lugar,
-            parametro = parametro,
-            rango = rango_valores,
-            fechas = rango_fechas
-            )
-        st.session_state.df_filtrado = df_filtrado
+    #Hacemos que los rangos sean dinamicos y no sean siempre 0 - 100 (para los valores numericos)
+    if df is not None and parametro.lower() in df.columns:
+        min_val = float(df[parametro.lower()].min())
+        max_val = float(df[parametro.lower()].max())
+    else:
+        min_val, max_val = 0, 100
 
-        # st.subheader(f"Resultados filtrados ({len(df_filtrado)} filas)")
-        # st.dataframe(df_filtrado, width='stretch')
+    rango_valores = st.sidebar.slider("Rango de valores", min_val, max_val, (min_val, max_val))
+
+    rango_fechas = st.sidebar.date_input("Rango de fechas", [])
+
+    aplicar = st.sidebar.button("Aplicar filtros")
+
+    if aplicar:
+        # Guardamos el parámetro actual para usarlo fuera del fragmento
+        st.session_state.parametro_actual = parametro
+
+        #Aplicamos los filtros de la columna de la izquierda.
+        if df is not None:
+            df_filtrado = aplicar_filtros(
+                df,
+                tipos_vehiculo = tipos_vehiculo,
+                tipos_combustible = tipos_combustible,
+                lugar = lugar,
+                parametro = parametro,
+                rango = rango_valores,
+                fechas = rango_fechas
+                )
+            st.session_state.df_filtrado = df_filtrado
+            st.rerun()
+
+# Llamada a la función de fragmento
+mostrar_filtros_laterales(df)
+
+# Recuperamos variables clave del estado para el resto de la app
+if "parametro_actual" not in st.session_state:
+    st.session_state.parametro_actual = "repostado" # Valor por defecto
+
+parametro = st.session_state.parametro_actual
+
 
 df_filtrado = st.session_state.df_filtrado  # Recuperamos el dataframe persistente
 
