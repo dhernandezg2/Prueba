@@ -44,40 +44,51 @@ st.sidebar.divider()
 st.sidebar.header("Filtros")
 
 # Inicializar opciones vacías
-# Inicializar opciones
-opciones_tipo_vehiculo = []
+# Inicializar variables de selección desde session_state si existen para usar en el filtrado cruzado
+# Esto permite que el filtrado sea bidireccional (Vehículo <-> Combustible <-> Dirección)
 
-if df is not None:
-    if "tipo_vehiculo" in df.columns:
-        opciones_tipo_vehiculo = sorted(df["tipo_vehiculo"].dropna().unique())
+sel_vehiculos = st.session_state.get("filter_vehiculo", [])
+sel_combustibles = st.session_state.get("filter_combustible", [])
+sel_direcciones = st.session_state.get("filter_direccion", [])
 
-# 1. Filtro de Tipo de Vehículo (Jerarquía superior)
-tipos_vehiculo = st.sidebar.multiselect("Tipo de vehículo", opciones_tipo_vehiculo)
-
-# Lógica de filtrado en cascada
-# Si hay una selección en vehículo, filtramos las opciones para los siguientes
-if df is not None:
-    df_temp = df.copy()
-    if tipos_vehiculo:
-        df_temp = df_temp[df_temp["tipo_vehiculo"].isin(tipos_vehiculo)]
+# Función auxiliar para obtener opciones válidas
+def obtener_opciones_validas(df, col_objetivo, filtros_dict):
+    if df is None:
+        return []
     
-    # Obtener opciones basadas en la selección actual (o data completa si no hay nada seleccionado)
-    if "tipo_combustible" in df_temp.columns:
-        opciones_tipo_combustible = sorted(df_temp["tipo_combustible"].dropna().unique())
-    else:
-        opciones_tipo_combustible = []
-        
-    if "direccion" in df_temp.columns:
-        opciones_direccion = sorted(df_temp["direccion"].astype(str).dropna().unique())
-    else:
-        opciones_direccion = []
+    df_temp = df.copy()
+    for col, valores in filtros_dict.items():
+        if valores and col in df_temp.columns:
+            df_temp = df_temp[df_temp[col].isin(valores)]
+            
+    if col_objetivo in df_temp.columns:
+        return sorted(df_temp[col_objetivo].dropna().unique())
+    return []
+
+# Calcular opciones disponibles para cada filtro basado en los OTROS filtros seleccionados
+if df is not None:
+    opciones_tipo_vehiculo = obtener_opciones_validas(df, "tipo_vehiculo", {
+        "tipo_combustible": sel_combustibles,
+        "direccion": sel_direcciones
+    })
+    
+    opciones_tipo_combustible = obtener_opciones_validas(df, "tipo_combustible", {
+        "tipo_vehiculo": sel_vehiculos,
+        "direccion": sel_direcciones
+    })
+    
+    opciones_direccion = obtener_opciones_validas(df, "direccion", {
+        "tipo_vehiculo": sel_vehiculos,
+        "tipo_combustible": sel_combustibles
+    })
 else:
-    opciones_tipo_combustible = []
-    opciones_direccion = []
+    opciones_tipo_vehiculo, opciones_tipo_combustible, opciones_direccion = [], [], []
 
-
-tipos_combustible = st.sidebar.multiselect("Tipo de combustible", opciones_tipo_combustible)
-lugar = st.sidebar.multiselect("Dirección", opciones_direccion)
+# Renderizar los widgets con las opciones calculadas y usar keys para persistencia
+# Nota: Streamlit elimina automáticamente opciones seleccionadas que ya no están en la lista de opciones (parametro 'options')
+tipos_vehiculo = st.sidebar.multiselect("Tipo de vehículo", options=opciones_tipo_vehiculo, key="filter_vehiculo")
+tipos_combustible = st.sidebar.multiselect("Tipo de combustible", options=opciones_tipo_combustible, key="filter_combustible")
+lugar = st.sidebar.multiselect("Dirección", options=opciones_direccion, key="filter_direccion")
 
 parametro = st.sidebar.selectbox("Parámetro", ["repostado", "distancia", "consumo"])
 
