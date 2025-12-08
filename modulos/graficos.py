@@ -129,7 +129,7 @@ def mapa_repostajes(df, vehiculo, estilo="Claro"):
 
     return r
 
-def grafico_general_repostajes(df):
+def grafico_general_repostajes(df, indices_adestacar=None):
     """
     Genera un gráfico de barras mostrando el total repostado por tipo de vehículo.
     """
@@ -155,6 +155,9 @@ def grafico_general_repostajes(df):
     
     if df_agrupado.empty:
         return None
+    
+    # Ordenar por valor descendente para consistencia visual y de índices
+    df_agrupado = df_agrupado.sort_values(by="repostado", ascending=False)
 
     # Crear gráfico de tarta (pie chart)
     fig = px.pie(
@@ -170,6 +173,13 @@ def grafico_general_repostajes(df):
         textposition='inside', 
         textinfo='percent+label'
     )
+    
+    # Aplicar efecto de "pull" (resaltado) si hay índices seleccionados
+    if indices_adestacar:
+        # Creamos una lista de 0s (no pull) y 0.2 (pull) según si el índice está en la selección
+        # Los índices de Plotly corresponden al orden en el dataframe graficado
+        pull_values = [0.2 if i in indices_adestacar else 0 for i in range(len(df_agrupado))]
+        fig.update_traces(pull=pull_values)
     
     fig.update_layout(
         template="plotly_dark", # Tema oscuro para coincidir con el fondo de estrellas

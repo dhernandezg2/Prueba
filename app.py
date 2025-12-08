@@ -129,9 +129,20 @@ with tab_general:
         
         st.divider()
         st.subheader("Resumen General")
-        fig_general = grafico_general_repostajes(df)
+        # Lógica de selección para interactividad (Pop-out)
+        key_chart = "chart_general"
+        
+        # Recuperar selección previa si existe
+        indices_seleccionados = []
+        if key_chart in st.session_state:
+            state = st.session_state[key_chart]
+            if state and "selection" in state and "points" in state["selection"]:
+                indices_seleccionados = [p["point_index"] for p in state["selection"]["points"]]
+
+        fig_general = grafico_general_repostajes(df, indices_adestacar=indices_seleccionados)
+        
         if fig_general:
-            st.plotly_chart(fig_general, use_container_width=True, key="chart_general")
+            st.plotly_chart(fig_general, use_container_width=True, key=key_chart, on_select="rerun")
         else:
             st.info("No hay datos suficientes para generar el gráfico general.")
 
