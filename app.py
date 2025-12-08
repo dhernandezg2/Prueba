@@ -44,22 +44,38 @@ st.sidebar.divider()
 st.sidebar.header("Filtros")
 
 # Inicializar opciones vacías
+# Inicializar opciones
 opciones_tipo_vehiculo = []
-opciones_tipo_combustible = []
-opciones_direccion = []
 
 if df is not None:
-    # Obtener valores únicos si existen las columnas
     if "tipo_vehiculo" in df.columns:
         opciones_tipo_vehiculo = sorted(df["tipo_vehiculo"].dropna().unique())
-    
-    if "tipo_combustible" in df.columns:
-        opciones_tipo_combustible = sorted(df["tipo_combustible"].dropna().unique())
-        
-    if "direccion" in df.columns:
-        opciones_direccion = sorted(df["direccion"].astype(str).dropna().unique())
 
+# 1. Filtro de Tipo de Vehículo (Jerarquía superior)
 tipos_vehiculo = st.sidebar.multiselect("Tipo de vehículo", opciones_tipo_vehiculo)
+
+# Lógica de filtrado en cascada
+# Si hay una selección en vehículo, filtramos las opciones para los siguientes
+if df is not None:
+    df_temp = df.copy()
+    if tipos_vehiculo:
+        df_temp = df_temp[df_temp["tipo_vehiculo"].isin(tipos_vehiculo)]
+    
+    # Obtener opciones basadas en la selección actual (o data completa si no hay nada seleccionado)
+    if "tipo_combustible" in df_temp.columns:
+        opciones_tipo_combustible = sorted(df_temp["tipo_combustible"].dropna().unique())
+    else:
+        opciones_tipo_combustible = []
+        
+    if "direccion" in df_temp.columns:
+        opciones_direccion = sorted(df_temp["direccion"].astype(str).dropna().unique())
+    else:
+        opciones_direccion = []
+else:
+    opciones_tipo_combustible = []
+    opciones_direccion = []
+
+
 tipos_combustible = st.sidebar.multiselect("Tipo de combustible", opciones_tipo_combustible)
 lugar = st.sidebar.multiselect("Dirección", opciones_direccion)
 
