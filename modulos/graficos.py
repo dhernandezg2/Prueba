@@ -18,8 +18,7 @@ def Grafico_lineal_parametros(df, parametro):
         eje_x = "fecha"
     else:
         eje_x = df.index.name if df.index.name else "index"
-        
-    
+
     #Creamos el grafico de area suavizado (más estético)
     fig = px.area(
         df,
