@@ -216,9 +216,31 @@ with tab_provincia:
         # Selector de provincia (usamos 'direccion' o 'provincia')
         col_lugar = "provincia" if "provincia" in df.columns else "direccion"
         
-        if col_lugar in df.columns:
+        # Lógica para extraer provincia limpia si usamos dirección
+        # Se asume formato "Pais, Ciudad, Calle..." -> Extraer índice 1
+        if col_lugar == "direccion":
+            def extraer_ciudad(dir_str):
+                parts = str(dir_str).split(',')
+                # Si hay comas, tomamos el segundo elemento (índice 1) asumiendo "País, Ciudad, ..."
+                if len(parts) > 1:
+                    return parts[1].strip()
+                return str(dir_str).strip()
+            
+            # Usamos una columna temporal para el selector
+            df_temp = df.copy()
+            df_temp["_provincia_calc"] = df_temp[col_lugar].apply(extraer_ciudad)
+            
+            lugares = sorted(df_temp["_provincia_calc"].unique())
+            lugar_sel = st.selectbox("Selecciona Provincia / Ciudad:", lugares, index=0)
+            
+            if lugar_sel:
+                # Filtrar usando la columna calculada
+                df_prov = df_temp[df_temp["_provincia_calc"] == lugar_sel]
+                mostrar_graficos_resumen(df_prov, "provincia")
+                
+        elif col_lugar in df.columns:
             lugares = sorted(df[col_lugar].astype(str).unique())
-            lugar_sel = st.selectbox("Selecciona Provincia / Lugar:", lugares, index=0)
+            lugar_sel = st.selectbox("Selecciona Provincia:", lugares, index=0)
             
             if lugar_sel:
                 df_prov = df[df[col_lugar] == lugar_sel]
