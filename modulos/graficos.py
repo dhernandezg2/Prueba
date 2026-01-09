@@ -1,5 +1,7 @@
 import plotly.express as px
+import plotly.graph_objects as go
 import pydeck as pdk
+import pandas as pd
 
 #Histogramas para los diferentes parametros
 def Grafico_lineal_parametros(df, parametro):
@@ -241,4 +243,233 @@ def grafico_top_vehiculos(df, metrica="repostado", n=5):
         showlegend=False
     )
 
+    return fig
+
+
+def grafico_barras_temporal(df, col_fecha, col_metrica, periodo='M', titulo="Evolución Temporal"):
+    """
+    Genera un gráfico de barras agrupado por tiempo (Mes 'M' o Semana 'W').
+    """
+    if df is None or df.empty:
+        return None
+    
+    if col_fecha not in df.columns or col_metrica not in df.columns:
+        return None
+
+    # Aseguramos formato fecha
+    df = df.copy()
+    df[col_fecha] = pd.to_datetime(df[col_fecha], errors='coerce')
+    df = df.dropna(subset=[col_fecha])
+
+    # Agrupamos
+    freq_alias = 'W-MON' if periodo == 'W' else 'MS'
+    
+    df_agrupado = df.groupby(pd.Grouper(key=col_fecha, freq=freq_alias))[col_metrica].sum().reset_index()
+
+    if df_agrupado.empty:
+        return None
+
+    fig = px.bar(
+        df_agrupado,
+        x=col_fecha,
+        y=col_metrica,
+        title=titulo,
+        text_auto='.2s',
+        color_discrete_sequence=["#00CC96"] 
+    )
+
+    fig.update_layout(
+        xaxis_title="Fecha",
+        yaxis_title=col_metrica.capitalize(),
+        template="plotly_dark",
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        bargap=0.2
+    )
+
+    # Mejorar eje X
+    fig.update_xaxes(
+        dtick="M1" if periodo == 'M' else 604800000.0 * 4 
+    )
+
+    return fig
+
+def grafico_tarta_distribucion(df, columna, titulo):
+    """
+    Gráfico circular genérico para distribuciones.
+    """
+    if df is None or df.empty or columna not in df.columns:
+        return None
+
+    if "repostado" in df.columns:
+        df_counts = df.groupby(columna)["repostado"].sum().reset_index(name='valor')
+    else:
+        df_counts = df.groupby(columna).size().reset_index(name='valor')
+    
+    if df_counts.empty:
+        return None
+
+    fig = px.pie(
+        df_counts,
+        names=columna,
+        values='valor',
+        title=titulo,
+        color_discrete_sequence=px.colors.qualitative.Pastel
+    )
+    
+    fig.update_traces(textposition='inside', textinfo='percent+label')
+    fig.update_layout(
+        template="plotly_dark",
+        paper_bgcolor='rgba(0,0,0,0)',
+        showlegend=True
+    )
+    return fig
+
+def grafico_dia_semana(df, col_fecha):
+    """
+    Gráfico circular indicando el día de la semana de repostaje.
+    """
+    if df is None or df.empty or col_fecha not in df.columns:
+        return None
+    
+    df = df.copy()
+    df[col_fecha] = pd.to_datetime(df[col_fecha], errors='coerce')
+    df = df.dropna(subset=[col_fecha])
+    
+    if df.empty:
+        return None
+
+    dias = {0:"Lunes", 1:"Martes", 2:"Miércoles", 3:"Jueves", 4:"Viernes", 5:"Sábado", 6:"Domingo"}
+    df['dia_semana'] = df[col_fecha].dt.dayofweek.map(dias)
+    
+    return grafico_tarta_distribucion(df, 'dia_semana', "Repostajes por Día de la Semana")
+
+def grafico_lineal_consumo(df, col_fecha, col_consumo="consumo"):
+    """
+    Gráfico lineal indicando si el consumo va a más o menos.
+    """
+    if df is None or df.empty:
+        return None
+    
+    target_col = col_consumo
+    if target_col not in df.columns:
+        return None
+    
+    if col_fecha not in df.columns:
+        return None
+    
+    df = df.copy()
+    df[col_fecha] = pd.to_datetime(df[col_fecha], errors='coerce')
+    df = df.dropna(subset=[col_fecha, target_col])
+    df = df.sort_values(col_fecha)
+    
+    if df.empty:
+        return None
+
+    fig = px.line(
+        df, 
+        x=col_fecha, 
+        y=target_col, 
+        markers=True,
+        title=f"Evolución del {target_col.capitalize()}",
+        color_discrete_sequence=["#EF553B"]
+    )
+    
+    if len(df) > 2:
+        try:
+            trend = px.scatter(df, x=col_fecha, y=target_col, trendline="ols").data[1]
+            trend.line.color = 'white'
+            trend.line.dash = 'dot'
+            fig.add_trace(trend)
+        except Exception:
+            pass
+
+    fig.update_layout(
+        template="plotly_dark",
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        xaxis_title="Fecha",
+        yaxis_title=target_col.capitalize()
+    )
+    return fig
+
+def grafico_comparativo_modelo(df_total, vehiculo_sel, col_fecha, col_metrica, col_modelo):
+    """
+    Todos los vehículos del mismo modelo en un tono más claro y este vehículo más resaltado.
+    """
+    if df_total is None or df_total.empty:
+        return None
+    
+    target_modelo = col_modelo
+    if target_modelo not in df_total.columns:
+        if "tipo_vehiculo" in df_total.columns:
+            target_modelo = "tipo_vehiculo"
+        else:
+            return None
+
+    df_v = df_total[df_total["vehiculo"].astype(str) == str(vehiculo_sel)]
+    if df_v.empty:
+        return None
+    
+    modelo_val = df_v.iloc[0][target_modelo]
+    
+    df_modelo = df_total[df_total[target_modelo] == modelo_val].copy()
+    
+    if df_modelo.empty:
+        return None
+
+    if col_fecha not in df_modelo.columns:
+        return None
+
+    df_modelo[col_fecha] = pd.to_datetime(df_modelo[col_fecha], errors='coerce')
+    df_modelo = df_modelo.dropna(subset=[col_fecha])
+    
+    fig = go.Figure()
+    
+    vehiculos_modelo = df_modelo["vehiculo"].unique()
+    freq = 'MS'
+    
+    for v in vehiculos_modelo:
+        if str(v) == str(vehiculo_sel):
+            continue 
+            
+        df_temp = df_modelo[df_modelo["vehiculo"] == v]
+        # Agrupamos también
+        df_temp_ag = df_temp.groupby(pd.Grouper(key=col_fecha, freq=freq))[col_metrica].sum().reset_index()
+        
+        if not df_temp_ag.empty:
+            fig.add_trace(go.Scatter(
+                x=df_temp_ag[col_fecha],
+                y=df_temp_ag[col_metrica],
+                mode='lines',
+                line=dict(color='rgba(255, 255, 255, 0.1)', width=1), 
+                name=str(v),
+                showlegend=False,
+                hoverinfo='skip'
+            ))
+            
+    df_v = df_v.copy()
+    df_v[col_fecha] = pd.to_datetime(df_v[col_fecha], errors='coerce')
+    df_sel_ag = df_v.groupby(pd.Grouper(key=col_fecha, freq=freq))[col_metrica].sum().reset_index()
+    
+    if not df_sel_ag.empty:
+        fig.add_trace(go.Scatter(
+            x=df_sel_ag[col_fecha],
+            y=df_sel_ag[col_metrica],
+            mode='lines+markers',
+            line=dict(color='#00CC96', width=4),
+            marker=dict(size=8),
+            name=f"{vehiculo_sel}"
+        ))
+
+    fig.update_layout(
+         title=f"Comparativa {col_metrica.capitalize()} (Modelo: {modelo_val})",
+         template="plotly_dark",
+         paper_bgcolor='rgba(0,0,0,0)',
+         plot_bgcolor='rgba(0,0,0,0)',
+         xaxis_title="Fecha",
+         yaxis_title=col_metrica.capitalize(),
+         hovermode="x unified"
+    )
+    
     return fig
