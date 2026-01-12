@@ -81,7 +81,7 @@ def filtro_fechas(df, fechas):
 
 
 #Filtros juntos
-def aplicar_filtros(df,tipos_vehiculo = None,tipos_combustible = None,lugar = None, parametro = None, rango = None, fechas = None):
+def aplicar_filtros(df,tipos_vehiculo = None,tipos_combustible = None,lugar = None, rangos = None, fechas = None):
     
     if df is None:
         return None
@@ -100,10 +100,15 @@ def aplicar_filtros(df,tipos_vehiculo = None,tipos_combustible = None,lugar = No
     if lugar:
          df_filtrado = filtro_direccion(df_filtrado, lugar)
 
-    #Aplicamos la funcion de rangos dinamicos
-    if parametro and rango:
-        columna = parametro.lower()
-        df_filtrado = filtro_rango(df_filtrado, columna, rango)
+    #Aplicamos la funcion de rangos dinamicos para cada parametro en el diccionario rangos
+    """
+    rangos debe ser un diccionario { "nombre_columna": (min, max), ... }
+    """
+    if rangos:
+        for columna, (valor_min, valor_max) in rangos.items():
+            # Filtramos solo si la columna existe
+            if columna.lower() in df_filtrado.columns:
+                 df_filtrado = filtro_rango(df_filtrado, columna.lower(), (valor_min, valor_max))
         
     #Filtramos por fechas
     if fechas:

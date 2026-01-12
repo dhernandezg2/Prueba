@@ -96,24 +96,39 @@ def mostrar_filtros_laterales(df):
     tipos_combustible = st.multiselect("Tipo de combustible", options=opciones_tipo_combustible, key="filter_combustible")
     lugar = st.multiselect("Dirección", options=opciones_direccion, key="filter_direccion")
 
-    parametro = st.selectbox("Parámetro", ["repostado", "distancia", "consumo"])
+    parametro = None # Ya no usamos un solo parámetro
 
-    #Hacemos que los rangos sean dinamicos y no sean siempre 0 - 100 (para los valores numericos)
-    if df is not None and parametro.lower() in df.columns:
-        min_val = float(df[parametro.lower()].min())
-        max_val = float(df[parametro.lower()].max())
-    else:
-        min_val, max_val = 0, 100
+    # Detectar columnas numéricas relevantes para rangos
+    # Podríamos hacerlo dinámico o fijo según requisitos. Haremos fijo a las 3 principales.
+    metricas_rango = ["repostado", "distancia", "consumo"]
+    rangos_activos = {}
 
-    rango_valores = st.slider("Rango de valores", min_val, max_val, (min_val, max_val))
-
+    st.subheader("Rangos")
+    for metrica in metricas_rango:
+        if df is not None and metrica in df.columns:
+            # Calcular min/max
+            # Asegurar numérico primero por si acaso
+            col_data = pd.to_numeric(df[metrica], errors='coerce').dropna()
+            
+            if not col_data.empty:
+                min_val = float(col_data.min())
+                max_val = float(col_data.max())
+                
+                # Crear slider si hay variabilidad, o mostrar solo info
+                if min_val < max_val:
+                    # Usar key única por métrica
+                    rango_sel = st.slider(f"Rango {metrica.capitalize()}", min_val, max_val, (min_val, max_val), key=f"slider_{metrica}")
+                    rangos_activos[metrica] = rango_sel
+                else:
+                    st.info(f"{metrica.capitalize()}: {min_val}")
+    
     rango_fechas = st.date_input("Rango de fechas", [])
 
     aplicar = st.button("Aplicar filtros")
 
     if aplicar:
-        # Guardamos el parámetro actual para usarlo fuera del fragmento
-        st.session_state.parametro_actual = parametro
+        # Ya no guardamos parámetro único en session state de esta forma
+        # st.session_state.parametro_actual = parametro
 
         #Aplicamos los filtros de la columna de la izquierda.
         if df is not None:
@@ -122,8 +137,7 @@ def mostrar_filtros_laterales(df):
                 tipos_vehiculo = tipos_vehiculo,
                 tipos_combustible = tipos_combustible,
                 lugar = lugar,
-                parametro = parametro,
-                rango = rango_valores,
+                rangos = rangos_activos,
                 fechas = rango_fechas
                 )
             st.session_state.df_filtrado = df_filtrado
@@ -134,8 +148,10 @@ with st.sidebar:
     mostrar_filtros_laterales(df)
 
 # Recuperamos variables clave del estado para el resto de la app
+# parametro_actual ya no es crítico para el filtrado, pero tal vez para gráficos.
+# Dejaremos un default para compatibilidad si algo lo usa.
 if "parametro_actual" not in st.session_state:
-    st.session_state.parametro_actual = "repostado" # Valor por defecto
+    st.session_state.parametro_actual = "repostado" 
 
 parametro = st.session_state.parametro_actual
 
