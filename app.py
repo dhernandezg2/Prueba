@@ -45,7 +45,8 @@ else:
 st.sidebar.divider()
 
 # FILTROS LATERALES
-@st.fragment
+# FILTROS LATERALES
+# @st.fragment eliminado para evitar conflictos de estado/rerun con la persistencia de filtros
 def mostrar_filtros_laterales(df):
     st.header("Filtros")
 
