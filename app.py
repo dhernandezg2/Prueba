@@ -166,6 +166,9 @@ parametro = st.session_state.parametro_actual
 
 df_filtrado = st.session_state.df_filtrado  # Recuperamos el dataframe persistente
 
+# Definimos el dataframe activo para todas las pestañas (filtrado o total)
+df_activo = df_filtrado if df_filtrado is not None else df
+
 # CREACIÓN DE PESTAÑAS
 # CREACIÓN DE PESTAÑAS
 tab_general, tab_provincia, tab_vehiculo = st.tabs(["Vista General (Flota)", "Vista por Provincia", "Detalle Vehículo"])
@@ -227,18 +230,18 @@ def mostrar_graficos_resumen(df_local, clave_sufijo=""):
             if fig_anio: st.plotly_chart(fig_anio, use_container_width=True, key=f"pie_anio_{clave_sufijo}")
 
 with tab_general:
-    if df is not None:
-        st.subheader("Vista General de toda la Flota")
-        mostrar_graficos_resumen(df, "general")
+    if df_activo is not None:
+        st.subheader("Vista General de toda la Flota (Filtrada)")
+        mostrar_graficos_resumen(df_activo, "general")
     else:
         st.info("Carga un archivo para ver los datos.")
 
 with tab_provincia:
-    if df is not None:
+    if df_activo is not None:
         st.subheader("Vista por Provincia")
         
         # Selector de provincia (usamos 'direccion' o 'provincia')
-        col_lugar = "provincia" if "provincia" in df.columns else "direccion"
+        col_lugar = "provincia" if "provincia" in df_activo.columns else "direccion"
         
         # Lógica para extraer provincia limpia si usamos dirección
         # Se asume formato "Pais, Ciudad, Calle..." -> Extraer índice 1
@@ -251,7 +254,7 @@ with tab_provincia:
                 return str(dir_str).strip()
             
             # Usamos una columna temporal para el selector
-            df_temp = df.copy()
+            df_temp = df_activo.copy()
             df_temp["_provincia_calc"] = df_temp[col_lugar].apply(extraer_ciudad)
             
             lugares = sorted(df_temp["_provincia_calc"].unique())
@@ -262,12 +265,12 @@ with tab_provincia:
                 df_prov = df_temp[df_temp["_provincia_calc"] == lugar_sel]
                 mostrar_graficos_resumen(df_prov, "provincia")
                 
-        elif col_lugar in df.columns:
-            lugares = sorted(df[col_lugar].astype(str).unique())
+        elif col_lugar in df_activo.columns:
+            lugares = sorted(df_activo[col_lugar].astype(str).unique())
             lugar_sel = st.selectbox("Selecciona Provincia:", lugares, index=0)
             
             if lugar_sel:
-                df_prov = df[df[col_lugar] == lugar_sel]
+                df_prov = df_activo[df_activo[col_lugar] == lugar_sel]
                 mostrar_graficos_resumen(df_prov, "provincia")
         else:
             st.warning("No se encontró columna de Provincia o Dirección.")
