@@ -223,8 +223,6 @@ def mostrar_graficos_resumen(df_local, clave_sufijo=""):
             if fig_eti: st.plotly_chart(fig_eti, use_container_width=True, key=f"pie_eti_{clave_sufijo}")
     
     with col6:
-        if hay_anio in df_local.columns: # Corrección de lógica
-            pass
         if col_anio in df_local.columns:
             fig_anio = grafico_tarta_distribucion(df_local, col_anio, "Distribución por Año")
             if fig_anio: st.plotly_chart(fig_anio, use_container_width=True, key=f"pie_anio_{clave_sufijo}")
