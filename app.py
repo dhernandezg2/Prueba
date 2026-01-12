@@ -57,41 +57,15 @@ def mostrar_filtros_laterales(df):
     sel_combustibles = st.session_state.get("filter_combustible", [])
     sel_direcciones = st.session_state.get("filter_direccion", [])
 
-    # Función auxiliar para obtener opciones válidas
-    def obtener_opciones_validas(df, col_objetivo, filtros_dict):
-        if df is None:
-            return []
-        
-        df_temp = df.copy()
-        for col, valores in filtros_dict.items():
-            if valores and col in df_temp.columns:
-                df_temp = df_temp[df_temp[col].isin(valores)]
-                
-        if col_objetivo in df_temp.columns:
-            return sorted(df_temp[col_objetivo].dropna().unique())
-        return []
-
-    # Calcular opciones disponibles para cada filtro basado en los OTROS filtros seleccionados
+    # Calcular opciones disponibles para cada filtro (Opciones estáticas para evitar que se borren)
     if df is not None:
-        opciones_tipo_vehiculo = obtener_opciones_validas(df, "tipo_vehiculo", {
-            "tipo_combustible": sel_combustibles,
-            "direccion": sel_direcciones
-        })
-        
-        opciones_tipo_combustible = obtener_opciones_validas(df, "tipo_combustible", {
-            "tipo_vehiculo": sel_vehiculos,
-            "direccion": sel_direcciones
-        })
-        
-        opciones_direccion = obtener_opciones_validas(df, "direccion", {
-            "tipo_vehiculo": sel_vehiculos,
-            "tipo_combustible": sel_combustibles
-        })
+        opciones_tipo_vehiculo = sorted(df["tipo_vehiculo"].dropna().unique()) if "tipo_vehiculo" in df.columns else []
+        opciones_tipo_combustible = sorted(df["tipo_combustible"].dropna().unique()) if "tipo_combustible" in df.columns else []
+        opciones_direccion = sorted(df["direccion"].dropna().unique()) if "direccion" in df.columns else []
     else:
         opciones_tipo_vehiculo, opciones_tipo_combustible, opciones_direccion = [], [], []
 
-    # Renderizar los widgets con las opciones calculadas y usar keys para persistencia
-    # Nota: Streamlit elimina automáticamente opciones seleccionadas que ya no están en la lista de opciones (parametro 'options')
+    # Renderizar los widgets con las opciones completas
     tipos_vehiculo = st.multiselect("Tipo de vehículo", options=opciones_tipo_vehiculo, key="filter_vehiculo")
     tipos_combustible = st.multiselect("Tipo de combustible", options=opciones_tipo_combustible, key="filter_combustible")
     lugar = st.multiselect("Dirección", options=opciones_direccion, key="filter_direccion")
