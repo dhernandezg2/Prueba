@@ -156,7 +156,7 @@ def mostrar_filtros_laterales(df):
                 df,
                 tipos_vehiculo = tipos_vehiculo,
                 tipos_combustible = tipos_combustible,
-                lugar = provincia, # Pasamos provincia como 'lugar'
+                provincia = provincia, # Corregido argumento 'lugar' -> 'provincia'
                 rangos = rangos_activos,
                 fechas = rango_fechas
                 )
