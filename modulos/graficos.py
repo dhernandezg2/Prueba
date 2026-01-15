@@ -457,7 +457,7 @@ def grafico_lineal_consumo(df, col_fecha, col_consumo="consumo"):
 
 def grafico_comparativo_modelo(df_total, vehiculo_sel, col_fecha, col_metrica, col_modelo):
     """
-    Todos los vehículos del mismo modelo en un tono más claro y este vehículo más resaltado.
+    Comparativa: Vehículo Seleccionado vs Media del Modelo.
     """
     if df_total is None or df_total.empty:
         return None
@@ -469,12 +469,14 @@ def grafico_comparativo_modelo(df_total, vehiculo_sel, col_fecha, col_metrica, c
         else:
             return None
 
+    # 1. Obtener datos del vehículo seleccionado
     df_v = df_total[df_total["vehiculo"].astype(str) == str(vehiculo_sel)]
     if df_v.empty:
         return None
     
     modelo_val = df_v.iloc[0][target_modelo]
     
+    # 2. Obtener datos de TODO el modelo (incluyendo o excluyendo el vehículo? usualmente incluyendo para "media del segmento")
     df_modelo = df_total[df_total[target_modelo] == modelo_val].copy()
     
     if df_modelo.empty:
@@ -483,55 +485,62 @@ def grafico_comparativo_modelo(df_total, vehiculo_sel, col_fecha, col_metrica, c
     if col_fecha not in df_modelo.columns:
         return None
 
+    # Estandarizar fechas
     df_modelo[col_fecha] = pd.to_datetime(df_modelo[col_fecha], errors='coerce')
     df_modelo = df_modelo.dropna(subset=[col_fecha])
     
-    fig = go.Figure()
-    
-    vehiculos_modelo = df_modelo["vehiculo"].unique()
-    freq = 'MS'
-    
-    for v in vehiculos_modelo:
-        if str(v) == str(vehiculo_sel):
-            continue 
-            
-        df_temp = df_modelo[df_modelo["vehiculo"] == v]
-        # Agrupamos también
-        df_temp_ag = df_temp.groupby(pd.Grouper(key=col_fecha, freq=freq))[col_metrica].sum().reset_index()
-        
-        if not df_temp_ag.empty:
-            fig.add_trace(go.Scatter(
-                x=df_temp_ag[col_fecha],
-                y=df_temp_ag[col_metrica],
-                mode='lines',
-                line=dict(color='rgba(255, 255, 255, 0.1)', width=1), 
-                name=str(v),
-                showlegend=False,
-                hoverinfo='skip'
-            ))
-            
     df_v = df_v.copy()
     df_v[col_fecha] = pd.to_datetime(df_v[col_fecha], errors='coerce')
+    df_v = df_v.dropna(subset=[col_fecha])
+
+    # 3. Calcular métrica mensual (agrupación 'MS')
+    freq = 'MS'
+    
+    # Datos vehículo seleccionado
     df_sel_ag = df_v.groupby(pd.Grouper(key=col_fecha, freq=freq))[col_metrica].sum().reset_index()
     
+    # Datos Modelo: Calcular "Promedio Mensual por Vehículo"
+    # Primero sumamos por [Mes, Vehículo] para obtener el total de CADA coche en CADA mes
+    df_mod_per_veh = df_modelo.groupby([pd.Grouper(key=col_fecha, freq=freq), "vehiculo"])[col_metrica].sum().reset_index()
+    
+    # Ahora promediamos esos totales por mes -> Esto nos da "Cuánto reposta/recorre en promedio un coche de este modelo al mes"
+    df_mod_ag = df_mod_per_veh.groupby(col_fecha)[col_metrica].mean().reset_index()
+    
+    # Crear Gráfico
+    fig = go.Figure()
+    
+    # Traza: Media del Modelo
+    if not df_mod_ag.empty:
+        fig.add_trace(go.Scatter(
+            x=df_mod_ag[col_fecha],
+            y=df_mod_ag[col_metrica],
+            mode='lines',
+            line=dict(color='rgba(255, 255, 255, 0.5)', width=2, dash='dash'), 
+            name=f"Media {modelo_val}",
+            hovertemplate = 'Media: %{y:.1f}<extra></extra>' # Tooltip más limpio
+        ))
+        
+    # Traza: Vehículo Seleccionado
     if not df_sel_ag.empty:
         fig.add_trace(go.Scatter(
             x=df_sel_ag[col_fecha],
             y=df_sel_ag[col_metrica],
             mode='lines+markers',
             line=dict(color='#00CC96', width=4),
-            marker=dict(size=8),
-            name=f"{vehiculo_sel}"
+            marker=dict(size=8, color='#00CC96', line=dict(width=2, color='white')),
+            name=f"{vehiculo_sel}",
+            hovertemplate = 'Vehículo: %{y:.1f}<extra></extra>'
         ))
 
     fig.update_layout(
-         title=f"Comparativa {col_metrica.capitalize()} (Modelo: {modelo_val})",
+         title=f"Comparativa {col_metrica.capitalize()} vs Media Modelo ({modelo_val})",
          template="plotly_dark",
          paper_bgcolor='rgba(0,0,0,0)',
          plot_bgcolor='rgba(0,0,0,0)',
          xaxis_title="Fecha",
          yaxis_title=col_metrica.capitalize(),
-         hovermode="x unified"
+         hovermode="x unified",
+         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
     )
     
     return fig
