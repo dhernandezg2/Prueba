@@ -262,7 +262,12 @@ def grafico_barras_temporal(df, col_fecha, col_metrica, periodo='M', titulo="Evo
     df = df.dropna(subset=[col_fecha])
 
     # Agrupamos
-    freq_alias = 'W-MON' if periodo == 'W' else 'MS'
+    if periodo == 'W':
+        freq_alias = 'W-MON'
+    elif periodo == 'M':
+        freq_alias = 'MS'
+    else: # periodo == 'Y' o 'A'
+        freq_alias = 'Y' # 'YE' en pandas nuevos, 'Y' en viejos. Usamos 'Y' por compatibilidad o 'YE' si avisa warning.
     
     df_agrupado = df.groupby(pd.Grouper(key=col_fecha, freq=freq_alias))[col_metrica].sum().reset_index()
 
@@ -288,11 +293,16 @@ def grafico_barras_temporal(df, col_fecha, col_metrica, periodo='M', titulo="Evo
     )
 
     # Mejorar eje X
-    fig.update_xaxes(
-        dtick="M1" if periodo == 'M' else 604800000.0 * 4 
-    )
-
-    return fig
+    if periodo == 'Y':
+        fig.update_xaxes(
+            dtick="M12", # Un tick cada 12 meses
+            tickformat="%Y" # Mostrar solo el año
+        )
+    elif periodo == 'M':
+         fig.update_xaxes(dtick="M1", tickformat="%b %Y")
+    else:
+         # Semanal
+         fig.update_xaxes(dtick=604800000.0 * 4) # Aprox un tick al mes visualmente para no saturar
 
 def grafico_tarta_distribucion(df, columna, titulo):
     """
