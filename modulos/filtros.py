@@ -46,17 +46,21 @@ def filtro_tipo_combustible(df,tipos_combustible):
     return df[df["tipo_combustible"].isin(tipos_combustible)]
 
 
-#Filtra el dataframe segun la direccion
-def filtro_direccion(df, lugar):
+#Filtra el dataframe segun la provincia
+def filtro_provincia(df, provincia):
 
     if df is None:
         return None
     
-    #Si no se selecciona ninguna direccion
-    if not lugar:
+    #Si no se selecciona ninguna provincia
+    if not provincia:
         return df
     
-    return df[df["direccion"].isin(lugar)]
+    # Asegurarse que la columna provincia existe (se crea en app.py)
+    if "provincia" not in df.columns:
+        return df
+    
+    return df[df["provincia"].isin(provincia)]
 
 
 #Filtra el dataframe segun el rango de fechas
@@ -81,7 +85,7 @@ def filtro_fechas(df, fechas):
 
 
 #Filtros juntos
-def aplicar_filtros(df,tipos_vehiculo = None,tipos_combustible = None,lugar = None, rangos = None, fechas = None):
+def aplicar_filtros(df,tipos_vehiculo = None,tipos_combustible = None,provincia = None, rangos = None, fechas = None):
     
     if df is None:
         return None
@@ -96,9 +100,9 @@ def aplicar_filtros(df,tipos_vehiculo = None,tipos_combustible = None,lugar = No
     if tipos_combustible:
          df_filtrado = filtro_tipo_combustible(df_filtrado, tipos_combustible)
 
-    #Filtramos por direccion
-    if lugar:
-         df_filtrado = filtro_direccion(df_filtrado, lugar)
+    #Filtramos por provincia
+    if provincia:
+         df_filtrado = filtro_provincia(df_filtrado, provincia)
 
     #Aplicamos la funcion de rangos dinamicos para cada parametro en el diccionario rangos
     """

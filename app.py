@@ -36,6 +36,20 @@ if modo == "📤 Subir archivo":
 
         #Transformo las columnas a minusculas
         df.columns = df.columns.str.lower().str.strip()
+
+        # Estandarizar columna 'provincia'
+        if "provincia" not in df.columns:
+            if "direccion" in df.columns:
+                # Intentar extraer provincia de dirección (formato 'Pais, Ciudad, ...')
+                def extraer_provincia(dir_str):
+                    parts = str(dir_str).split(',')
+                    if len(parts) > 1:
+                        return parts[1].strip()
+                    return str(dir_str).strip()
+                df["provincia"] = df["direccion"].apply(extraer_provincia)
+            else:
+                st.error("El archivo no tiene columna 'provincia' ni 'direccion'.")
+                df = None
     
     else:
         df = None
@@ -45,18 +59,16 @@ else:
 st.sidebar.divider()
 
 # FILTROS LATERALES
-# FILTROS LATERALES
 # @st.fragment eliminado para evitar conflictos de estado/rerun con la persistencia de filtros
 def mostrar_filtros_laterales(df):
     st.header("Filtros")
 
     # Inicializar opciones vacías
-    # Inicializar variables de selección desde session_state si existen para usar en el filtrado cruzado
-    # Esto permite que el filtrado sea bidireccional (Vehículo <-> Combustible <-> Dirección)
-
+    # Inicializar variables de selección desde session_state
+    
     sel_vehiculos = st.session_state.get("filter_vehiculo", [])
     sel_combustibles = st.session_state.get("filter_combustible", [])
-    sel_direcciones = st.session_state.get("filter_direccion", [])
+    sel_provincias = st.session_state.get("filter_provincia", [])
 
     # Función auxiliar para obtener opciones válidas
     def obtener_opciones_validas(df, col_objetivo, filtros_dict):
@@ -77,15 +89,15 @@ def mostrar_filtros_laterales(df):
         # Calcular opciones validas según el filtrado cruzado
         valid_veh = obtener_opciones_validas(df, "tipo_vehiculo", {
             "tipo_combustible": sel_combustibles,
-            "direccion": sel_direcciones
+            "provincia": sel_provincias
         })
         
         valid_comb = obtener_opciones_validas(df, "tipo_combustible", {
             "tipo_vehiculo": sel_vehiculos,
-            "direccion": sel_direcciones
+            "provincia": sel_provincias
         })
         
-        valid_dir = obtener_opciones_validas(df, "direccion", {
+        valid_prov = obtener_opciones_validas(df, "provincia", {
             "tipo_vehiculo": sel_vehiculos,
             "tipo_combustible": sel_combustibles
         })
@@ -94,15 +106,15 @@ def mostrar_filtros_laterales(df):
         # para evitar que streamlit las borre automáticamente.
         opciones_tipo_vehiculo = sorted(list(set(valid_veh) | set(sel_vehiculos)))
         opciones_tipo_combustible = sorted(list(set(valid_comb) | set(sel_combustibles)))
-        opciones_direccion = sorted(list(set(valid_dir) | set(sel_direcciones)))
+        opciones_provincia = sorted(list(set(valid_prov) | set(sel_provincias)))
 
     else:
-        opciones_tipo_vehiculo, opciones_tipo_combustible, opciones_direccion = [], [], []
+        opciones_tipo_vehiculo, opciones_tipo_combustible, opciones_provincia = [], [], []
 
     # Renderizar los widgets con las opciones completas
     tipos_vehiculo = st.multiselect("Tipo de vehículo", options=opciones_tipo_vehiculo, key="filter_vehiculo")
     tipos_combustible = st.multiselect("Tipo de combustible", options=opciones_tipo_combustible, key="filter_combustible")
-    lugar = st.multiselect("Dirección", options=opciones_direccion, key="filter_direccion")
+    provincia = st.multiselect("Provincia", options=opciones_provincia, key="filter_provincia")
 
     parametro = None # Ya no usamos un solo parámetro
 
@@ -144,7 +156,7 @@ def mostrar_filtros_laterales(df):
                 df,
                 tipos_vehiculo = tipos_vehiculo,
                 tipos_combustible = tipos_combustible,
-                lugar = lugar,
+                lugar = provincia, # Pasamos provincia como 'lugar'
                 rangos = rangos_activos,
                 fechas = rango_fechas
                 )
@@ -238,45 +250,17 @@ with tab_provincia:
     if df_activo is not None:
         st.subheader("Vista por Provincia")
         
-        # Selector de provincia (usamos 'direccion' o 'provincia')
-        col_lugar = "provincia" if "provincia" in df_activo.columns else "direccion"
-        
-        # Lógica para extraer provincia limpia si usamos dirección
-        # Se asume formato "Pais, Ciudad, Calle..." -> Extraer índice 1
-        if col_lugar == "direccion":
-            def extraer_ciudad(dir_str):
-                parts = str(dir_str).split(',')
-                # Si hay comas, tomamos el segundo elemento (índice 1) asumiendo "País, Ciudad, ..."
-                if len(parts) > 1:
-                    return parts[1].strip()
-                return str(dir_str).strip()
-            
-            # Usamos una columna temporal para el selector
-            df_temp = df_activo.copy()
-            df_temp["_provincia_calc"] = df_temp[col_lugar].apply(extraer_ciudad)
-            
-            lugares = sorted(df_temp["_provincia_calc"].unique())
-            lugar_sel = st.selectbox("Selecciona Provincia / Ciudad:", lugares, index=0)
-            
-            if lugar_sel:
-                # Filtrar usando la columna calculada
-                df_prov = df_temp[df_temp["_provincia_calc"] == lugar_sel]
-                mostrar_graficos_resumen(df_prov, "provincia")
-                
-        elif col_lugar in df_activo.columns:
-            lugares = sorted(df_activo[col_lugar].astype(str).unique())
+        # Como ya garantizamos la columna 'provincia' en la carga, usamos esa directamente.
+        if "provincia" in df_activo.columns:
+            lugares = sorted(df_activo["provincia"].astype(str).unique())
             lugar_sel = st.selectbox("Selecciona Provincia:", lugares, index=0)
             
             if lugar_sel:
-                df_prov = df_activo[df_activo[col_lugar] == lugar_sel]
+                df_prov = df_activo[df_activo["provincia"] == lugar_sel]
                 mostrar_graficos_resumen(df_prov, "provincia")
         else:
-            st.warning("No se encontró columna de Provincia o Dirección.")
-            # Fallback a usar df_filtrado si el usuario usó filtros laterales
-            if df_filtrado is not None:
-                st.info("Mostrando datos de filtros laterales:")
-                mostrar_graficos_resumen(df_filtrado, "prov_filtrado")
-
+             # Fallback por seguridad si algo falla en la carga
+            st.warning("No se encontró columna de Provincia.")
     else:
         st.info("Carga un archivo.")
 
