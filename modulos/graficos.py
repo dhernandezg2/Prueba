@@ -273,6 +273,10 @@ def grafico_barras_temporal(df, col_fecha, col_metrica, periodo='M', titulo="Evo
 
     if df_agrupado.empty:
         return None
+        
+    # Si es anual, convertimos la fecha a año (string) para que el eje X quede limpio (categorías) y se vean los años
+    if periodo == 'Y':
+        df_agrupado[col_fecha] = df_agrupado[col_fecha].dt.year.astype(str)
 
     fig = px.bar(
         df_agrupado,
@@ -293,16 +297,12 @@ def grafico_barras_temporal(df, col_fecha, col_metrica, periodo='M', titulo="Evo
     )
 
     # Mejorar eje X
-    if periodo == 'Y':
-        fig.update_xaxes(
-            dtick="M12", # Un tick cada 12 meses
-            tickformat="%Y" # Mostrar solo el año
-        )
-    elif periodo == 'M':
+    if periodo == 'M':
          fig.update_xaxes(dtick="M1", tickformat="%b %Y")
-    else:
+    elif periodo == 'W':
          # Semanal
          fig.update_xaxes(dtick=604800000.0 * 4) # Aprox un tick al mes visualmente para no saturar
+    # Para periodo == 'Y', al ser string/categoría, Plotly lo maneja automáticamente bien.
 
     return fig
 
