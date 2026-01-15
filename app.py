@@ -279,9 +279,14 @@ with tab_vehiculo:
             if vehiculo_sel:
                 df_v = df[df["vehiculo"].astype(str) == str(vehiculo_sel)]
                 
-                # Gráficos mensuales/semanales
-                periodo = st.radio("Agrupación temporal:", ["Mensual", "Semanal"], horizontal=True)
-                per_code = "M" if periodo == "Mensual" else "W"
+                # Gráficos mensuales/semanales/anuales
+                periodo = st.radio("Agrupación temporal:", ["Mensual", "Semanal", "Anual"], horizontal=True)
+                if periodo == "Mensual":
+                    per_code = "M"
+                elif periodo == "Semanal":
+                     per_code = "W"
+                else: 
+                     per_code = "Y"
                 
                 c1, c2 = st.columns(2)
                 with c1:
