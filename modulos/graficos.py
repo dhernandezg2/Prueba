@@ -304,6 +304,8 @@ def grafico_barras_temporal(df, col_fecha, col_metrica, periodo='M', titulo="Evo
          # Semanal
          fig.update_xaxes(dtick=604800000.0 * 4) # Aprox un tick al mes visualmente para no saturar
 
+    return fig
+
 def grafico_tarta_distribucion(df, columna, titulo):
     """
     Gráfico circular genérico para distribuciones.
