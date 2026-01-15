@@ -13,11 +13,11 @@ def filtro_rango(df,columna,rango):
     #valores del rango
     valor_min, valor_max = rango
 
-    #Aseguramos que sea de tipo numerico
-    df[columna] = pd.to_numeric(df[columna], errors= "coerce")
+    #Aseguramos que sea de tipo numerico (sin modificar df original)
+    serie_num = pd.to_numeric(df[columna], errors= "coerce")
 
     #Apñicamos el filtro.
-    return df[(df[columna] >= valor_min) & (df[columna] <= valor_max)]
+    return df[(serie_num >= valor_min) & (serie_num <= valor_max)]
 
 
 #Filtra el dataframe segun el tipo de vehiculo
