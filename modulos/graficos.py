@@ -239,7 +239,9 @@ def grafico_top_vehiculos(df, metrica="repostado", n=5):
     fig.update_layout(
         xaxis_title=metrica.capitalize(),
         yaxis_title="Vehículo",
-        template="plotly_white",
+        template="plotly_dark",
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
         showlegend=False
     )
 
