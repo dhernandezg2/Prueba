@@ -269,15 +269,15 @@ with tab_vehiculo:
         st.subheader("Vista Detallada del Vehículo")
         
         # Selector de vehículo
-        # Usamos df_filtrado si existe para reducir lista, si no df completo
-        base_df = df_filtrado if df_filtrado is not None else df
+        # Usamos df_activo que ya incluye los filtros globales (fecha, etc)
+        base_df = df_activo
         
         if "vehiculo" in base_df.columns:
             vehiculos = sorted(base_df["vehiculo"].astype(str).unique())
             vehiculo_sel = st.selectbox("Selecciona Vehículo:", vehiculos, index=None, placeholder="Matrícula...")
             
             if vehiculo_sel:
-                df_v = df[df["vehiculo"].astype(str) == str(vehiculo_sel)]
+                df_v = base_df[base_df["vehiculo"].astype(str) == str(vehiculo_sel)]
                 
                 # Gráficos mensuales/semanales/anuales
                 periodo = st.radio("Agrupación temporal:", ["Mensual", "Semanal", "Anual"], horizontal=True)
@@ -322,10 +322,11 @@ with tab_vehiculo:
                 st.subheader("Comparativa con Modelo")
                 # Gráfico comparativo
                 # Todos los vehículos del mismo modelo en tono claro
-                metrics = [c for c in ["repostado", "distancia", "consumo"] if c in df.columns]
+                # Usamos df_activo para que la comparativa también respete los filtros (ej: rango de fechas)
+                metrics = [c for c in ["repostado", "distancia", "consumo"] if c in df_activo.columns]
                 if metrics:
                     metrica_comp = st.selectbox("Métrica a comparar:", metrics)
-                    f_comp = grafico_comparativo_modelo(df, vehiculo_sel, "fecha", metrica_comp, "tipo_vehiculo")
+                    f_comp = grafico_comparativo_modelo(df_activo, vehiculo_sel, "fecha", metrica_comp, "tipo_vehiculo")
                     # Nota: asumo 'tipo_vehiculo' como modelo, si hay columna 'modelo' mejor.
                     if f_comp: st.plotly_chart(f_comp, use_container_width=True, key="v_comp")
                     else: st.info("No se pudo generar la comparativa (faltan datos del modelo).")
