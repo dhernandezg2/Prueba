@@ -345,6 +345,10 @@ def grafico_dia_semana(df, col_fecha):
     """
     Gráfico circular indicando el día de la semana de repostaje.
     """
+def grafico_dia_semana(df, col_fecha):
+    """
+    Gráfico de barras indicando el día de la semana de repostaje (Lunes a Domingo).
+    """
     if df is None or df.empty or col_fecha not in df.columns:
         return None
     
@@ -355,10 +359,52 @@ def grafico_dia_semana(df, col_fecha):
     if df.empty:
         return None
 
-    dias = {0:"Lunes", 1:"Martes", 2:"Miércoles", 3:"Jueves", 4:"Viernes", 5:"Sábado", 6:"Domingo"}
-    df['dia_semana'] = df[col_fecha].dt.dayofweek.map(dias)
+    # Obtener índice de día de semana (0=Lunes, 6=Domingo)
+    df['dia_index'] = df[col_fecha].dt.dayofweek
     
-    return grafico_tarta_distribucion(df, 'dia_semana', "Repostajes por Día de la Semana")
+    # Agrupar
+    # Decidir si sumamos repostado o contamos frecuencia. 
+    # Para ser consistente con lo anterior, si hay repostado sumamos, si no contamos.
+    if "repostado" in df.columns:
+        df_ag = df.groupby('dia_index')["repostado"].sum().reset_index()
+        y_col = "repostado"
+        ylabel = "Total Repostado"
+    else:
+        df_ag = df.groupby('dia_index').size().reset_index(name='conteo')
+        y_col = "conteo"
+        ylabel = "Cantidad de Repostajes"
+
+    # Asegurar orden 0-6 llenando huecos si faltan días?
+    # Mejor mostrar solo lo que hay pero ordenado.
+    
+    dias_map = {0:"Lunes", 1:"Martes", 2:"Miércoles", 3:"Jueves", 4:"Viernes", 5:"Sábado", 6:"Domingo"}
+    df_ag["dia_nombre"] = df_ag["dia_index"].map(dias_map)
+    
+    # Ordenar explícitamente por índice para garantizar Lunes -> Domingo
+    df_ag = df_ag.sort_values("dia_index")
+    
+    if df_ag.empty:
+        return None
+
+    fig = px.bar(
+        df_ag,
+        x="dia_nombre",
+        y=y_col,
+        title="Repostajes por Día de la Semana",
+        text_auto='.2s',
+        color_discrete_sequence=["#AB63FA"] # Un color distinto, ej. violeta
+    )
+    
+    fig.update_layout(
+        xaxis_title="Día",
+        yaxis_title=ylabel,
+        template="plotly_dark",
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        showlegend=False
+    )
+    
+    return fig
 
 def grafico_lineal_consumo(df, col_fecha, col_consumo="consumo"):
     """
