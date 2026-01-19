@@ -3,64 +3,62 @@ import plotly.graph_objects as go
 import pydeck as pdk
 import pandas as pd
 
-# Configuración común para layouts oscuros
-def aplicar_estilo_oscuro(fig):
-    fig.update_layout(
-        template="plotly_dark",
-        paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(0,0,0,0)'
-    )
-    return fig
-
-# Gráfico de área para evolución de parámetros
+#Histogramas para los diferentes parametros
 def Grafico_lineal_parametros(df, parametro):
+
     if df is None or df.empty:
         return None
     
     columna = parametro.lower()
+
     if columna not in df.columns:
         return None
     
-    # Determinar eje X (fecha o índice)
+    #Filtramos por fecha para ordenarlas
     if "fecha" in df.columns:
         df = df.sort_values("fecha")
         eje_x = "fecha"
     else:
         eje_x = df.index.name if df.index.name else "index"
 
-    # Crear gráfico de área suavizado
+    #Creamos el grafico de area suavizado (más estético)
     fig = px.area(
         df,
-        x=eje_x,
-        y=columna,
-        markers=True,
-        title=f"Evolución de {columna}",
-        color_discrete_sequence=["#00CC96"]
+        x = eje_x,
+        y = columna,
+        markers= True,
+        title = f"Evolución de {columna}",
+        color_discrete_sequence = ["#00CC96"] # Un color verde/turquesa brillante que resalta sobre oscuro
     )
 
     fig.update_traces(
-        line=dict(width=3, shape='spline'),
-        marker=dict(size=8, symbol='circle', line=dict(width=2, color='white')),
-        fill='tozeroy'
+        line=dict(width=3, shape='spline'), # Línea curva suave
+        marker=dict(size=8, symbol='circle', line=dict(width=2, color='white')), # Marcadores más bonitos
+        fill='tozeroy' # Relleno hasta el eje Y
     )
     
-    aplicar_estilo_oscuro(fig)
     fig.update_layout(
-        xaxis_title="Fecha" if eje_x == "fecha" else "",
-        yaxis_title=columna.capitalize(),
-        hovermode="x unified",
+        xaxis_title = "Fecha" if eje_x == "fecha" else "",
+        yaxis_title = columna.capitalize(),
+        template = "plotly_dark", # Tema oscuro para coincidir con el fondo
+        paper_bgcolor='rgba(0,0,0,0)', # Fondo transparente
+        plot_bgcolor='rgba(0,0,0,0)', # Fondo del gráfico transparente
+        hovermode="x unified", # Hover unificado para ver datos fácilmente
         font=dict(family="Inter, sans-serif", size=14)
     )
+
     return fig
 
-# Mapa interactivo 3D de repostajes
+#Mapa interactivo 3D con Pydeck
 def mapa_repostajes(df, vehiculo, estilo="Claro"):
+
     if df is None or df.empty:
         return None
     
-    # Validar columnas necesarias
-    columnas_necesarias = {"vehiculo", "latitud", "longitud"}
-    if not columnas_necesarias.issubset(set(df.columns)):
+    #Validamos las columnas necesarias
+    columnas_nec = {"vehiculo", "latitud", "longitud"}
+
+    if not columnas_nec.issubset(set(df.columns)):
         return None
     
     df_vehiculo = df[df["vehiculo"].astype(str) == str(vehiculo)].copy()
@@ -71,97 +69,109 @@ def mapa_repostajes(df, vehiculo, estilo="Claro"):
     if df_vehiculo.empty:
         return None
     
-    # Configuración de la vista inicial centrada en los datos
-    latitud_centro = df_vehiculo["latitud"].mean()
-    longitud_centro = df_vehiculo["longitud"].mean()
+    # Configuración de la vista inicial (centrada en los datos)
+    lat_center = df_vehiculo["latitud"].mean()
+    lon_center = df_vehiculo["longitud"].mean()
 
-    vista_inicial = pdk.ViewState(
-        latitude=latitud_centro,
-        longitude=longitud_centro,
-        zoom=15,
-        pitch=60,
+    view_state = pdk.ViewState(
+        latitude=lat_center,
+        longitude=lon_center,
+        zoom=15,  # Mayor zoom para ver más detalle
+        pitch=60, # Inclinación más pronunciada para efecto 3D
         bearing=0
     )
 
-    # Configurar capas del mapa según el estilo
-    capas = []
-    
+    # Capas del mapa
+    layers = []
+
+    # Si es satélite (ahora llamado "Oscuro" por el usuario), añadimos la capa de imágenes satelitales como base
     if estilo == "Oscuro":
-        capa_satelite = pdk.Layer(
+        satellite_layer = pdk.Layer(
             "TileLayer",
             data="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
             min_zoom=0,
             max_zoom=19,
             tileSize=256,
             render_sub_layers=True,
-            refinement_strategy="no-overlap"
+            refinement_strategy="no-overlap" # Estrategia para evitar errores de renderizado
         )
-        capas.append(capa_satelite)
-        estilo_mapa = None
+        layers.append(satellite_layer)
+        map_style = None # No usamos estilo base de mapbox/carto
     else:
-        estilo_mapa = "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
+        # Por defecto Claro (Carto Positron)
+        map_style = "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
 
-    # Capa de puntos de repostaje
-    capa_puntos = pdk.Layer(
+    # Capa de puntos de repostaje (siempre encima)
+    points_layer = pdk.Layer(
         "ScatterplotLayer",
         data=df_vehiculo,
         get_position='[longitud, latitud]',
-        get_color='[255, 50, 50, 220]',
-        get_radius=20,
-        get_line_color=[255, 255, 255],
+        get_color='[255, 50, 50, 220]', # Rojo intenso
+        get_radius=20, # Radio en metros (más pequeño)
+        get_line_color=[255, 255, 255], # Borde blanco
         line_width_min_pixels=2,
         pickable=True,
         auto_highlight=True
     )
-    capas.append(capa_puntos)
+    layers.append(points_layer)
 
-    # Configurar tooltip
+    # Tooltip personalizado
     tooltip = {
         "html": "<b>Dirección:</b> {direccion}<br/><b>Repostado:</b> {repostado} L",
         "style": {"backgroundColor": "rgba(255,255,255,0.9)", "color": "#333", "border": "2px solid #ff3232"}
     }
 
-    # Crear mapa
-    mapa = pdk.Deck(
-        map_style=estilo_mapa,
-        initial_view_state=vista_inicial,
-        layers=capas,
+    # Creamos el objeto Deck
+    r = pdk.Deck(
+        map_style=map_style,
+        initial_view_state=view_state,
+        layers=layers,
         tooltip=tooltip
     )
-    return mapa
+
+    return r
 
 def grafico_general_repostajes(df, indices_adestacar=None):
-    """Gráfico de tarta mostrando el total repostado por tipo de vehículo."""
-    if df is None or df.empty or "repostado" not in df.columns:
+    """
+    Genera un gráfico de barras mostrando el total repostado por tipo de vehículo.
+    """
+    if df is None or df.empty:
         return None
+    
+    # Verificar columnas necesarias
+    if "repostado" not in df.columns:
+        return None
+        
     # Determinar columna de agrupación (tipo_vehiculo o vehiculo)
     if "tipo_vehiculo" in df.columns:
-        columna_grupo = "tipo_vehiculo"
+        col_grupo = "tipo_vehiculo"
         titulo = "Total Repostado por Tipo de Vehículo"
     elif "vehiculo" in df.columns:
-        columna_grupo = "vehiculo"
+        col_grupo = "vehiculo"
         titulo = "Total Repostado por Vehículo"
     else:
         return None
 
     # Agrupar y sumar
-    datos_agrupados = df.groupby(columna_grupo)["repostado"].sum().reset_index()
+    df_agrupado = df.groupby(col_grupo)["repostado"].sum().reset_index()
     
-    if datos_agrupados.empty:
+    if df_agrupado.empty:
         return None
     
-    # Ordenar por valor descendente
-    datos_agrupados = datos_agrupados.sort_values(by="repostado", ascending=False)
+    
+    # Ordenar por valor descendente para consistencia visual y de índices
+    df_agrupado = df_agrupado.sort_values(by="repostado", ascending=False)
 
-    # Calcular porcentaje fijo relativo al total
-    total_repostado = datos_agrupados["repostado"].sum()
-    datos_agrupados["porcentaje_fijo"] = datos_agrupados["repostado"] / total_repostado
+    # Calcular porcentaje fijo relativo al total del dataframe (la vista actual)
+    # Esto asegura que si se ocultan segmentos o se hace pop-out, el porcentaje mostrado es el original
+    total_repostado = df_agrupado["repostado"].sum()
+    df_agrupado["porcentaje_fijo"] = df_agrupado["repostado"] / total_repostado
 
-    # Crear gráfico de tarta
+    # Crear gráfico de tarta (pie chart)
     fig = px.pie(
-        datos_agrupados,
+        df_agrupado,
         values="repostado",
-        names=columna_grupo,
+        names=col_grupo,
         title=titulo,
         hole=0.4, # Donut chart para estética moderna
         color_discrete_sequence=px.colors.qualitative.Vivid, # Colores vibrantes
@@ -178,18 +188,24 @@ def grafico_general_repostajes(df, indices_adestacar=None):
     
     # Aplicar efecto de "pull" (resaltado) si hay índices seleccionados
     if indices_adestacar:
-        valores_pull = [0.2 if i in indices_adestacar else 0 for i in range(len(datos_agrupados))]
-        fig.update_traces(pull=valores_pull)
+        # Creamos una lista de 0s (no pull) y 0.2 (pull) según si el índice está en la selección
+        # Los índices de Plotly corresponden al orden en el dataframe graficado
+        pull_values = [0.2 if i in indices_adestacar else 0 for i in range(len(df_agrupado))]
+        fig.update_traces(pull=pull_values)
     
-    aplicar_estilo_oscuro(fig)
     fig.update_layout(
+        template="plotly_dark", # Tema oscuro para coincidir con el fondo de estrellas
+        paper_bgcolor='rgba(0,0,0,0)',
         showlegend=True,
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
     )
+    
     return fig
 
 def grafico_top_vehiculos(df, metrica="repostado", n=5):
-    """Gráfico de barras horizontal con el top N de vehículos según la métrica."""
+    """
+    Genera un gráfico de barras horizontal con el top N de vehículos según la métrica.
+    """
     if df is None or df.empty:
         return None
     
@@ -198,19 +214,19 @@ def grafico_top_vehiculos(df, metrica="repostado", n=5):
         return None
 
     # Agrupar por vehículo y sumar la métrica
-    datos_top = df.groupby("vehiculo")[metrica].sum().reset_index()
+    df_top = df.groupby("vehiculo")[metrica].sum().reset_index()
     
     # Ordenar descendente y coger los top N
-    datos_top = datos_top.sort_values(metrica, ascending=False).head(n)
+    df_top = df_top.sort_values(metrica, ascending=False).head(n)
     
-    # Ordenar ascendente para que en el gráfico horizontal el mayor salga arriba
-    datos_top = datos_top.sort_values(metrica, ascending=True)
+    # Ordenar ascendente para que en el gráfico horizontal el mayor salga arriba (Plotly lo dibuja de abajo a arriba)
+    df_top = df_top.sort_values(metrica, ascending=True)
 
     titulo = f"Top {n} Vehículos por {metrica.capitalize()}"
     color_scale = "Viridis" if metrica == "repostado" else "Magma"
 
     fig = px.bar(
-        datos_top,
+        df_top,
         x=metrica,
         y="vehiculo",
         orientation='h',
@@ -220,46 +236,56 @@ def grafico_top_vehiculos(df, metrica="repostado", n=5):
         color_continuous_scale=color_scale
     )
 
-    aplicar_estilo_oscuro(fig)
     fig.update_layout(
         xaxis_title=metrica.capitalize(),
         yaxis_title="Vehículo",
+        template="plotly_dark",
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
         showlegend=False
     )
+
     return fig
 
 
 def grafico_barras_temporal(df, col_fecha, col_metrica, periodo='M', titulo="Evolución Temporal"):
-    """Gráfico de barras agrupado por tiempo (Mes 'M', Semana 'W' o Año 'Y')."""
+    """
+    Genera un gráfico de barras agrupado por tiempo (Mes 'M' o Semana 'W').
+    """
     if df is None or df.empty:
         return None
     
     if col_fecha not in df.columns or col_metrica not in df.columns:
         return None
 
-    # Preparar fechas
+    # Aseguramos formato fecha
     df = df.copy()
     df[col_fecha] = pd.to_datetime(df[col_fecha], errors='coerce')
     df = df.dropna(subset=[col_fecha])
 
-    # Determinar frecuencia
-    frecuencias = {'W': 'W-MON', 'M': 'MS', 'Y': 'Y'}
-    frecuencia = frecuencias.get(periodo, 'MS')
-    
-    datos_agrupados = df.groupby(pd.Grouper(key=col_fecha, freq=frecuencia))[col_metrica].sum().reset_index()
-
-    if datos_agrupados.empty:
-        return None
-    
-    # Formatear fechas para el eje X
-    if periodo == 'Y':
-        datos_agrupados[col_fecha] = datos_agrupados[col_fecha].dt.year.astype(str)
+    # Agrupamos
+    if periodo == 'W':
+        freq_alias = 'W-MON'
     elif periodo == 'M':
-        datos_agrupados = datos_agrupados.sort_values(col_fecha)
-        datos_agrupados[col_fecha] = datos_agrupados[col_fecha].dt.strftime('%b %Y')
+        freq_alias = 'MS'
+    else: # periodo == 'Y' o 'A'
+        freq_alias = 'Y' # 'YE' en pandas nuevos, 'Y' en viejos. Usamos 'Y' por compatibilidad o 'YE' si avisa warning.
+    
+    df_agrupado = df.groupby(pd.Grouper(key=col_fecha, freq=freq_alias))[col_metrica].sum().reset_index()
+
+    if df_agrupado.empty:
+        return None
+        
+    # Transformaciones a string para eje X categorical (asegura etiquetas en todas las barras)
+    if periodo == 'Y':
+        df_agrupado[col_fecha] = df_agrupado[col_fecha].dt.year.astype(str)
+    elif periodo == 'M':
+        # Ordenamos por fecha antes de convertir a string para garantizar orden cronológico
+        df_agrupado = df_agrupado.sort_values(col_fecha)
+        df_agrupado[col_fecha] = df_agrupado[col_fecha].dt.strftime('%b %Y')
 
     fig = px.bar(
-        datos_agrupados,
+        df_agrupado,
         x=col_fecha,
         y=col_metrica,
         title=titulo,
@@ -267,33 +293,40 @@ def grafico_barras_temporal(df, col_fecha, col_metrica, periodo='M', titulo="Evo
         color_discrete_sequence=["#00CC96"] 
     )
 
-    aplicar_estilo_oscuro(fig)
     fig.update_layout(
         xaxis_title="Fecha",
         yaxis_title=col_metrica.capitalize(),
+        template="plotly_dark",
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
         bargap=0.2
     )
 
+    # Mejorar eje X
     if periodo == 'W':
-        fig.update_xaxes(dtick=604800000.0 * 4)
+         # Semanal (mantenemos fecha continua para semanas)
+         fig.update_xaxes(dtick=604800000.0 * 4) 
+    # Para periodo == 'Y' o 'M' (Categorical), Plotly maneja etiquetas automáticas para cada barra.
 
     return fig
 
 def grafico_tarta_distribucion(df, columna, titulo):
-    """Gráfico circular genérico para distribuciones."""
+    """
+    Gráfico circular genérico para distribuciones.
+    """
     if df is None or df.empty or columna not in df.columns:
         return None
 
     if "repostado" in df.columns:
-        datos_conteo = df.groupby(columna)["repostado"].sum().reset_index(name='valor')
+        df_counts = df.groupby(columna)["repostado"].sum().reset_index(name='valor')
     else:
-        datos_conteo = df.groupby(columna).size().reset_index(name='valor')
+        df_counts = df.groupby(columna).size().reset_index(name='valor')
     
-    if datos_conteo.empty:
+    if df_counts.empty:
         return None
 
     fig = px.pie(
-        datos_conteo,
+        df_counts,
         names=columna,
         values='valor',
         title=titulo,
@@ -301,12 +334,21 @@ def grafico_tarta_distribucion(df, columna, titulo):
     )
     
     fig.update_traces(textposition='inside', textinfo='percent+label')
-    aplicar_estilo_oscuro(fig)
-    fig.update_layout(showlegend=True)
+    fig.update_layout(
+        template="plotly_dark",
+        paper_bgcolor='rgba(0,0,0,0)',
+        showlegend=True
+    )
     return fig
 
 def grafico_dia_semana(df, col_fecha):
-    """Gráfico de barras por día de la semana (Lunes a Domingo)."""
+    """
+    Gráfico circular indicando el día de la semana de repostaje.
+    """
+def grafico_dia_semana(df, col_fecha):
+    """
+    Gráfico de barras indicando el día de la semana de repostaje (Lunes a Domingo).
+    """
     if df is None or df.empty or col_fecha not in df.columns:
         return None
     
@@ -318,160 +360,187 @@ def grafico_dia_semana(df, col_fecha):
         return None
 
     # Obtener índice de día de semana (0=Lunes, 6=Domingo)
-    df['indice_dia'] = df[col_fecha].dt.dayofweek
+    df['dia_index'] = df[col_fecha].dt.dayofweek
     
-    # Agrupar por día
+    # Agrupar
+    # Decidir si sumamos repostado o contamos frecuencia. 
+    # Para ser consistente con lo anterior, si hay repostado sumamos, si no contamos.
     if "repostado" in df.columns:
-        datos_agrupados = df.groupby('indice_dia')["repostado"].sum().reset_index()
-        columna_y = "repostado"
-        etiqueta_y = "Total Repostado"
+        df_ag = df.groupby('dia_index')["repostado"].sum().reset_index()
+        y_col = "repostado"
+        ylabel = "Total Repostado"
     else:
-        datos_agrupados = df.groupby('indice_dia').size().reset_index(name='conteo')
-        columna_y = "conteo"
-        etiqueta_y = "Cantidad de Repostajes"
+        df_ag = df.groupby('dia_index').size().reset_index(name='conteo')
+        y_col = "conteo"
+        ylabel = "Cantidad de Repostajes"
+
+    # Asegurar orden 0-6 llenando huecos si faltan días?
+    # Mejor mostrar solo lo que hay pero ordenado.
     
-    # Mapear índices a nombres de días
-    dias_semana = {0: "Lunes", 1: "Martes", 2: "Miércoles", 3: "Jueves", 4: "Viernes", 5: "Sábado", 6: "Domingo"}
-    datos_agrupados["nombre_dia"] = datos_agrupados["indice_dia"].map(dias_semana)
-    datos_agrupados = datos_agrupados.sort_values("indice_dia")
+    dias_map = {0:"Lunes", 1:"Martes", 2:"Miércoles", 3:"Jueves", 4:"Viernes", 5:"Sábado", 6:"Domingo"}
+    df_ag["dia_nombre"] = df_ag["dia_index"].map(dias_map)
     
-    if datos_agrupados.empty:
+    # Ordenar explícitamente por índice para garantizar Lunes -> Domingo
+    df_ag = df_ag.sort_values("dia_index")
+    
+    if df_ag.empty:
         return None
 
     fig = px.bar(
-        datos_agrupados,
-        x="nombre_dia",
-        y=columna_y,
+        df_ag,
+        x="dia_nombre",
+        y=y_col,
         title="Repostajes por Día de la Semana",
         text_auto='.2s',
-        color_discrete_sequence=["#AB63FA"]
+        color_discrete_sequence=["#AB63FA"] # Un color distinto, ej. violeta
     )
     
-    aplicar_estilo_oscuro(fig)
     fig.update_layout(
         xaxis_title="Día",
-        yaxis_title=etiqueta_y,
+        yaxis_title=ylabel,
+        template="plotly_dark",
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
         showlegend=False
     )
+    
     return fig
 
 def grafico_lineal_consumo(df, col_fecha, col_consumo="consumo"):
-    """Gráfico lineal de tendencia de consumo."""
+    """
+    Gráfico lineal indicando si el consumo va a más o menos.
+    """
     if df is None or df.empty:
         return None
     
-    if col_consumo not in df.columns or col_fecha not in df.columns:
+    target_col = col_consumo
+    if target_col not in df.columns:
+        return None
+    
+    if col_fecha not in df.columns:
         return None
     
     df = df.copy()
     df[col_fecha] = pd.to_datetime(df[col_fecha], errors='coerce')
-    df = df.dropna(subset=[col_fecha, col_consumo])
+    df = df.dropna(subset=[col_fecha, target_col])
     df = df.sort_values(col_fecha)
     
     if df.empty:
         return None
 
     fig = px.line(
-        df,
-        x=col_fecha,
-        y=col_consumo,
+        df, 
+        x=col_fecha, 
+        y=target_col, 
         markers=True,
-        title=f"Evolución del {col_consumo.capitalize()}",
+        title=f"Evolución del {target_col.capitalize()}",
         color_discrete_sequence=["#EF553B"]
     )
     
-    # Añadir línea de tendencia
     if len(df) > 2:
         try:
-            tendencia = px.scatter(df, x=col_fecha, y=col_consumo, trendline="ols").data[1]
-            tendencia.line.color = 'white'
-            tendencia.line.dash = 'dot'
-            fig.add_trace(tendencia)
+            trend = px.scatter(df, x=col_fecha, y=target_col, trendline="ols").data[1]
+            trend.line.color = 'white'
+            trend.line.dash = 'dot'
+            fig.add_trace(trend)
         except Exception:
             pass
 
-    aplicar_estilo_oscuro(fig)
     fig.update_layout(
+        template="plotly_dark",
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
         xaxis_title="Fecha",
-        yaxis_title=col_consumo.capitalize()
+        yaxis_title=target_col.capitalize()
     )
     return fig
 
 def grafico_comparativo_modelo(df_total, vehiculo_sel, col_fecha, col_metrica, col_modelo):
-    """Comparativa: Vehículo seleccionado vs media del modelo."""
+    """
+    Comparativa: Vehículo Seleccionado vs Media del Modelo.
+    """
     if df_total is None or df_total.empty:
         return None
     
-    columna_modelo = col_modelo
-    if columna_modelo not in df_total.columns:
+    target_modelo = col_modelo
+    if target_modelo not in df_total.columns:
         if "tipo_vehiculo" in df_total.columns:
-            columna_modelo = "tipo_vehiculo"
+            target_modelo = "tipo_vehiculo"
         else:
             return None
 
-    # Obtener datos del vehículo seleccionado
-    datos_vehiculo = df_total[df_total["vehiculo"].astype(str) == str(vehiculo_sel)]
-    if datos_vehiculo.empty:
+    # 1. Obtener datos del vehículo seleccionado
+    df_v = df_total[df_total["vehiculo"].astype(str) == str(vehiculo_sel)]
+    if df_v.empty:
         return None
     
-    valor_modelo = datos_vehiculo.iloc[0][columna_modelo]
+    modelo_val = df_v.iloc[0][target_modelo]
     
-    # Obtener datos de todos los vehículos del mismo modelo
-    datos_modelo = df_total[df_total[columna_modelo] == valor_modelo].copy()
+    # 2. Obtener datos de TODO el modelo (incluyendo o excluyendo el vehículo? usualmente incluyendo para "media del segmento")
+    df_modelo = df_total[df_total[target_modelo] == modelo_val].copy()
     
-    if datos_modelo.empty or col_fecha not in datos_modelo.columns:
+    if df_modelo.empty:
         return None
 
-    # Convertir fechas a formato datetime
-    datos_modelo[col_fecha] = pd.to_datetime(datos_modelo[col_fecha], errors='coerce')
-    datos_modelo = datos_modelo.dropna(subset=[col_fecha])
-    
-    datos_vehiculo = datos_vehiculo.copy()
-    datos_vehiculo[col_fecha] = pd.to_datetime(datos_vehiculo[col_fecha], errors='coerce')
-    datos_vehiculo = datos_vehiculo.dropna(subset=[col_fecha])
+    if col_fecha not in df_modelo.columns:
+        return None
 
-    # Calcular métrica mensual
-    frecuencia = 'MS'
+    # Estandarizar fechas
+    df_modelo[col_fecha] = pd.to_datetime(df_modelo[col_fecha], errors='coerce')
+    df_modelo = df_modelo.dropna(subset=[col_fecha])
     
-    # Datos del vehículo seleccionado agrupados por mes
-    vehiculo_mensual = datos_vehiculo.groupby(pd.Grouper(key=col_fecha, freq=frecuencia))[col_metrica].sum().reset_index()
+    df_v = df_v.copy()
+    df_v[col_fecha] = pd.to_datetime(df_v[col_fecha], errors='coerce')
+    df_v = df_v.dropna(subset=[col_fecha])
+
+    # 3. Calcular métrica mensual (agrupación 'MS')
+    freq = 'MS'
     
-    # Calcular promedio mensual del modelo
-    modelo_por_vehiculo = datos_modelo.groupby([pd.Grouper(key=col_fecha, freq=frecuencia), "vehiculo"])[col_metrica].sum().reset_index()
-    modelo_mensual = modelo_por_vehiculo.groupby(col_fecha)[col_metrica].mean().reset_index()
+    # Datos vehículo seleccionado
+    df_sel_ag = df_v.groupby(pd.Grouper(key=col_fecha, freq=freq))[col_metrica].sum().reset_index()
     
-    # Crear gráfico comparativo
+    # Datos Modelo: Calcular "Promedio Mensual por Vehículo"
+    # Primero sumamos por [Mes, Vehículo] para obtener el total de CADA coche en CADA mes
+    df_mod_per_veh = df_modelo.groupby([pd.Grouper(key=col_fecha, freq=freq), "vehiculo"])[col_metrica].sum().reset_index()
+    
+    # Ahora promediamos esos totales por mes -> Esto nos da "Cuánto reposta/recorre en promedio un coche de este modelo al mes"
+    df_mod_ag = df_mod_per_veh.groupby(col_fecha)[col_metrica].mean().reset_index()
+    
+    # Crear Gráfico
     fig = go.Figure()
     
-    # Traza: Media del modelo
-    if not modelo_mensual.empty:
+    # Traza: Media del Modelo
+    if not df_mod_ag.empty:
         fig.add_trace(go.Scatter(
-            x=modelo_mensual[col_fecha],
-            y=modelo_mensual[col_metrica],
+            x=df_mod_ag[col_fecha],
+            y=df_mod_ag[col_metrica],
             mode='lines',
             line=dict(color='rgba(255, 255, 255, 0.5)', width=2, dash='dash'), 
-            name=f"Media {valor_modelo}",
-            hovertemplate='Media: %{y:.1f}<extra></extra>'
+            name=f"Media {modelo_val}",
+            hovertemplate = 'Media: %{y:.1f}<extra></extra>' # Tooltip más limpio
         ))
-    
-    # Traza: Vehículo seleccionado
-    if not vehiculo_mensual.empty:
+        
+    # Traza: Vehículo Seleccionado
+    if not df_sel_ag.empty:
         fig.add_trace(go.Scatter(
-            x=vehiculo_mensual[col_fecha],
-            y=vehiculo_mensual[col_metrica],
+            x=df_sel_ag[col_fecha],
+            y=df_sel_ag[col_metrica],
             mode='lines+markers',
             line=dict(color='#00CC96', width=4),
             marker=dict(size=8, color='#00CC96', line=dict(width=2, color='white')),
             name=f"{vehiculo_sel}",
-            hovertemplate='Vehículo: %{y:.1f}<extra></extra>'
+            hovertemplate = 'Vehículo: %{y:.1f}<extra></extra>'
         ))
 
-    aplicar_estilo_oscuro(fig)
     fig.update_layout(
-        title=f"Comparativa {col_metrica.capitalize()} vs Media Modelo ({valor_modelo})",
-        xaxis_title="Fecha",
-        yaxis_title=col_metrica.capitalize(),
-        hovermode="x unified",
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+         title=f"Comparativa {col_metrica.capitalize()} vs Media Modelo ({modelo_val})",
+         template="plotly_dark",
+         paper_bgcolor='rgba(0,0,0,0)',
+         plot_bgcolor='rgba(0,0,0,0)',
+         xaxis_title="Fecha",
+         yaxis_title=col_metrica.capitalize(),
+         hovermode="x unified",
+         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
     )
+    
     return fig
