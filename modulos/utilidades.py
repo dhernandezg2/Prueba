@@ -2,10 +2,8 @@ import streamlit as st
 import random
 
 def set_animated_background():
-    """
-    Injects CSS to create an animated gradient background for the Streamlit app.
-    """
-    page_bg_img = """
+
+    fondo_css = """
     <style>
     /* Animación de gradiente */
     @keyframes gradient {
@@ -22,21 +20,18 @@ def set_animated_background():
     }
     </style>
     """
-    st.markdown(page_bg_img, unsafe_allow_html=True)
+    st.markdown(fondo_css, unsafe_allow_html=True)
 
 @st.cache_data
 def get_star_css():
-    """
-    Generates the CSS for the star background. Cached to prevent regeneration on every rerun.
-    """
-    def get_shadows(n):
-        return ", ".join([f"{random.randint(0, 2000)}px {random.randint(0, 2000)}px #FFF" for _ in range(n)])
 
-    shadows_small = get_shadows(700)
-    shadows_medium = get_shadows(200)
-    shadows_big = get_shadows(100)
+    def generar_sombras(cantidad):
+        return ", ".join([f"{random.randint(0, 2000)}px {random.randint(0, 2000)}px #FFF" for _ in range(cantidad)])
 
-    # Tiempos de animación mucho más lentos (200s, 300s, 400s)
+    estrellas_pequenas = generar_sombras(700)
+    estrellas_medianas = generar_sombras(200)
+    estrellas_grandes = generar_sombras(100)
+
     return f"""
     <style>
     /* Fondo general - Forzamos el color de fondo */
@@ -51,21 +46,22 @@ def get_star_css():
         left: 0;
         width: 100%;
         height: 100%;
-        z-index: 0; /* Cambiado de -1 a 0 para asegurar visibilidad, pero cuidado con tapar contenido */
+        z-index: 0;
         pointer-events: none;
     }}
     
-    /* Ajustamos el z-index del contenido principal de Streamlit para que esté por encima */
+    /* Ajustamos el z-index del contenido principal */
     .main .block-container {{
         z-index: 1;
         position: relative;
     }}
 
+    /* Estrellas pequeñas */
     #stars {{
         width: 1px;
         height: 1px;
         background: transparent;
-        box-shadow: {shadows_small};
+        box-shadow: {estrellas_pequenas};
         animation: animStar 200s linear infinite;
     }}
     #stars:after {{
@@ -75,14 +71,15 @@ def get_star_css():
         width: 1px;
         height: 1px;
         background: transparent;
-        box-shadow: {shadows_small};
+        box-shadow: {estrellas_pequenas};
     }}
 
+    /* Estrellas medianas */
     #stars2 {{
         width: 2px;
         height: 2px;
         background: transparent;
-        box-shadow: {shadows_medium};
+        box-shadow: {estrellas_medianas};
         animation: animStar 300s linear infinite;
     }}
     #stars2:after {{
@@ -92,14 +89,15 @@ def get_star_css():
         width: 2px;
         height: 2px;
         background: transparent;
-        box-shadow: {shadows_medium};
+        box-shadow: {estrellas_medianas};
     }}
 
+    /* Estrellas grandes */
     #stars3 {{
         width: 3px;
         height: 3px;
         background: transparent;
-        box-shadow: {shadows_big};
+        box-shadow: {estrellas_grandes};
         animation: animStar 400s linear infinite;
     }}
     #stars3:after {{
@@ -109,7 +107,7 @@ def get_star_css():
         width: 3px;
         height: 3px;
         background: transparent;
-        box-shadow: {shadows_big};
+        box-shadow: {estrellas_grandes};
     }}
 
     @keyframes animStar {{
@@ -126,8 +124,6 @@ def get_star_css():
     """
 
 def set_star_background():
-    """
-    Injects the cached CSS for the star background.
-    """
+
     css = get_star_css()
     st.markdown(css, unsafe_allow_html=True)

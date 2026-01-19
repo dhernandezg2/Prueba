@@ -1,121 +1,81 @@
 import pandas as pd
 
-#funcion que filtra la barra de rango dinamicamente.
-def filtro_rango(df,columna,rango):
-
-    if df is None:
-        return None
+# Filtra el dataframe por un rango de valores numéricos
+def filtro_rango(df, columna, rango):
+    if df is None or not columna or columna not in df.columns:
+        return df if df is not None else None
     
-    #Si la no hay columna o esta no coincide con la del datashet
-    if not columna or columna not in df.columns:
-        return df
-
-    #valores del rango
-    valor_min, valor_max = rango
-
-    #Aseguramos que sea de tipo numerico (sin modificar df original)
-    serie_num = pd.to_numeric(df[columna], errors= "coerce")
-
-    #Apñicamos el filtro.
-    return df[(serie_num >= valor_min) & (serie_num <= valor_max)]
+    min_valor, max_valor = rango
+    
+    # Convierte el valor a numérico sin modificar el dataframe original
+    serie_numerica = pd.to_numeric(df[columna], errors="coerce")
+    
+    return df[(serie_numerica >= min_valor) & (serie_numerica <= max_valor)]
 
 
-#Filtra el dataframe segun el tipo de vehiculo
+# Filtra el dataframe según el tipo de vehículo
 def filtro_tipo_vehiculo(df, tipos_vehiculo):
-
-    if df is None:
-        return None
-    
-    #Si no se selecciona ningun vehículo
-    if not tipos_vehiculo:
+    if df is None or not tipos_vehiculo:
         return df
     
     return df[df["tipo_vehiculo"].isin(tipos_vehiculo)]
 
 
-#Filtra el dataframe segun el tipo de combustible
-def filtro_tipo_combustible(df,tipos_combustible):
-
-    if df is None:
-        return None
-    
-    #Si no se selecciona ningun combustible
-    if not tipos_combustible:
+# Filtra el dataframe según el tipo de combustible
+def filtro_tipo_combustible(df, tipos_combustible):
+    if df is None or not tipos_combustible:
         return df
     
     return df[df["tipo_combustible"].isin(tipos_combustible)]
 
 
-#Filtra el dataframe segun la provincia
+# Filtra el dataframe según la provincia
 def filtro_provincia(df, provincia):
-
-    if df is None:
-        return None
-    
-    #Si no se selecciona ninguna provincia
-    if not provincia:
+    if df is None or not provincia:
         return df
     
-    # Asegurarse que la columna provincia existe (se crea en app.py)
     if "provincia" not in df.columns:
         return df
     
     return df[df["provincia"].isin(provincia)]
 
 
-#Filtra el dataframe segun el rango de fechas
+# Filtra el dataframe según el rango de fechas
 def filtro_fechas(df, fechas):
-    if df is None or not fechas:
+    if df is None or not fechas or "fecha" not in df.columns:
         return df
     
-    # Aseguramos que la columna fecha sea datetime
-    if "fecha" in df.columns:
-        df["fecha"] = pd.to_datetime(df["fecha"], errors="coerce")
-        
-        # Si fechas es una tupla/lista con inicio y fin
-        if len(fechas) == 2:
-            inicio, fin = fechas
-            return df[(df["fecha"].dt.date >= inicio) & (df["fecha"].dt.date <= fin)]
-        # Si solo se selecciona un día (a veces pasa en streamlit si no seleccionas rango completo)
-        elif len(fechas) == 1:
-            dia = fechas[0]
-            return df[df["fecha"].dt.date == dia]
-            
+    df["fecha"] = pd.to_datetime(df["fecha"], errors="coerce")
+    
+    if len(fechas) == 2:
+        fecha_inicio, fecha_fin = fechas
+        return df[(df["fecha"].dt.date >= fecha_inicio) & (df["fecha"].dt.date <= fecha_fin)]
+    elif len(fechas) == 1:
+        fecha_unica = fechas[0]
+        return df[df["fecha"].dt.date == fecha_unica]
+    
     return df
 
 
-#Filtros juntos
-def aplicar_filtros(df,tipos_vehiculo = None,tipos_combustible = None,provincia = None, rangos = None, fechas = None):
-    
+# Aplica todos los filtros al dataframe
+def aplicar_filtros(df, tipos_vehiculo=None, tipos_combustible=None, provincia=None, rangos=None, fechas=None):
     if df is None:
         return None
-     
-    df_filtrado = df.copy()
-
-    #Filtramos por vehiculo
-    if tipos_vehiculo:
-         df_filtrado = filtro_tipo_vehiculo(df_filtrado, tipos_vehiculo)
-
-    #Filtramos por combustible
-    if tipos_combustible:
-         df_filtrado = filtro_tipo_combustible(df_filtrado, tipos_combustible)
-
-    #Filtramos por provincia
-    if provincia:
-         df_filtrado = filtro_provincia(df_filtrado, provincia)
-
-    #Aplicamos la funcion de rangos dinamicos para cada parametro en el diccionario rangos
-    """
-    rangos debe ser un diccionario { "nombre_columna": (min, max), ... }
-    """
+    
+    datos_filtrados = df.copy()
+    
+    # Aplica los filtros individuales
+    datos_filtrados = filtro_tipo_vehiculo(datos_filtrados, tipos_vehiculo)
+    datos_filtrados = filtro_tipo_combustible(datos_filtrados, tipos_combustible)
+    datos_filtrados = filtro_provincia(datos_filtrados, provincia)
+    
+    # Aplica los filtros dinámicos
     if rangos:
-        for columna, (valor_min, valor_max) in rangos.items():
-            # Filtramos solo si la columna existe
-            if columna.lower() in df_filtrado.columns:
-                 df_filtrado = filtro_rango(df_filtrado, columna.lower(), (valor_min, valor_max))
-        
-    #Filtramos por fechas
-    if fechas:
-        df_filtrado = filtro_fechas(df_filtrado, fechas)
-
-    return df_filtrado
+        for columna, (min_valor, max_valor) in rangos.items():
+            if columna.lower() in datos_filtrados.columns:
+                datos_filtrados = filtro_rango(datos_filtrados, columna.lower(), (min_valor, max_valor))
+    
+    # Aplica el filtro por fechas
+    datos_filtrados = filtro_fechas(datos_filtrados, fechas)
+    
+    return datos_filtrados

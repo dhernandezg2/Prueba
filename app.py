@@ -1,14 +1,20 @@
 import streamlit as st
 import pandas as pd
 
-if "df_filtrado" not in st.session_state:
-    st.session_state.df_filtrado = None
+if "datos_filtrados" not in st.session_state:
+    st.session_state.datos_filtrados = None
 
-#Funciones externas
+# Funciones externas
 from modulos.filtros import aplicar_filtros
 from modulos.graficos import (
-    Grafico_lineal_parametros, mapa_repostajes, grafico_general_repostajes, grafico_top_vehiculos,
-    grafico_barras_temporal, grafico_tarta_distribucion, grafico_dia_semana, grafico_lineal_consumo,
+    Grafico_lineal_parametros,
+    mapa_repostajes,
+    grafico_general_repostajes,
+    grafico_top_vehiculos,
+    grafico_barras_temporal,
+    grafico_tarta_distribucion,
+    grafico_dia_semana,
+    grafico_lineal_consumo,
     grafico_comparativo_modelo
 )
 from modulos.utilidades import set_star_background
@@ -16,11 +22,11 @@ from modulos.utilidades import set_star_background
 set_star_background()
 
 
-# CONFIGURACIÓN GENERAL 
+# Configuración general
 st.set_page_config(page_title="Repostajes", layout="wide")
 st.title("🚗 Análisis de Repostajes")
 
-# CARGA DE DATOS
+# Carga de datos
 st.sidebar.header("Datos de entrada")
 modo = st.sidebar.radio("Fuente de datos", ["📤 Subir archivo"])
 
@@ -34,13 +40,13 @@ if modo == "📤 Subir archivo":
         st.subheader("Vista previa de los datos")
         st.dataframe(df.head(10), width='stretch') 
 
-        #Transformo las columnas a minusculas
+        #Se transforman las columnas a minusculas
         df.columns = df.columns.str.lower().str.strip()
 
-        # Estandarizar columna 'provincia'
+        #Se estandariza la columna 'provincia'
         if "provincia" not in df.columns:
             if "direccion" in df.columns:
-                # Intentar extraer provincia de dirección (formato 'Pais, Ciudad, ...')
+                # Se extrae provincia de dirección
                 def extraer_provincia(dir_str):
                     parts = str(dir_str).split(',')
                     if len(parts) > 1:
@@ -58,19 +64,16 @@ else:
 
 st.sidebar.divider()
 
-# FILTROS LATERALES
-# @st.fragment eliminado para evitar conflictos de estado/rerun con la persistencia de filtros
+# Filtros del panel lateral
 def mostrar_filtros_laterales(df):
     st.header("Filtros")
 
-    # Inicializar opciones vacías
-    # Inicializar variables de selección desde session_state
-    
-    sel_vehiculos = st.session_state.get("filter_vehiculo", [])
-    sel_combustibles = st.session_state.get("filter_combustible", [])
-    sel_provincias = st.session_state.get("filter_provincia", [])
+    # Se inicializan las opciones vacías
+    vehiculos_seleccionados = st.session_state.get("filter_vehiculo", [])
+    combustibles_seleccionados = st.session_state.get("filter_combustible", [])
+    provincias_seleccionadas = st.session_state.get("filter_provincia", [])
 
-    # Función auxiliar para obtener opciones válidas
+    # Función auxiliar para obtener opciones válidas basadas en otros filtros
     def obtener_opciones_validas(df, col_objetivo, filtros_dict):
         if df is None:
             return []
@@ -84,182 +87,138 @@ def mostrar_filtros_laterales(df):
             return sorted(df_temp[col_objetivo].dropna().unique())
         return []
 
-    # Calcular opciones disponibles para cada filtro basado en los OTROS filtros seleccionados
+    # Calcula las opciones disponibles para cada filtro basado en los otros filtros seleccionados
     if df is not None:
-        # Calcular opciones validas según el filtrado cruzado
-        valid_veh = obtener_opciones_validas(df, "tipo_vehiculo", {
-            "tipo_combustible": sel_combustibles,
-            "provincia": sel_provincias
+        vehiculos_disponibles = obtener_opciones_validas(df, "tipo_vehiculo", {
+            "tipo_combustible": combustibles_seleccionados,
+            "provincia": provincias_seleccionadas
         })
         
-        valid_comb = obtener_opciones_validas(df, "tipo_combustible", {
-            "tipo_vehiculo": sel_vehiculos,
-            "provincia": sel_provincias
+        combustibles_disponibles = obtener_opciones_validas(df, "tipo_combustible", {
+            "tipo_vehiculo": vehiculos_seleccionados,
+            "provincia": provincias_seleccionadas
         })
         
-        valid_prov = obtener_opciones_validas(df, "provincia", {
-            "tipo_vehiculo": sel_vehiculos,
-            "tipo_combustible": sel_combustibles
+        provincias_disponibles = obtener_opciones_validas(df, "provincia", {
+            "tipo_vehiculo": vehiculos_seleccionados,
+            "tipo_combustible": combustibles_seleccionados
         })
         
-        # IMPORTANTE: Asegurar que las opciones seleccionadas actualmente sigan existiendo en las opciones
-        # para evitar que streamlit las borre automáticamente.
-        opciones_tipo_vehiculo = sorted(list(set(valid_veh) | set(sel_vehiculos)))
-        opciones_tipo_combustible = sorted(list(set(valid_comb) | set(sel_combustibles)))
-        opciones_provincia = sorted(list(set(valid_prov) | set(sel_provincias)))
+        # Asegura que las opciones seleccionadas sigan disponibles en la lista
+        opciones_tipo_vehiculo = sorted(list(set(vehiculos_disponibles) | set(vehiculos_seleccionados)))
+        opciones_tipo_combustible = sorted(list(set(combustibles_disponibles) | set(combustibles_seleccionados)))
+        opciones_provincia = sorted(list(set(provincias_disponibles) | set(provincias_seleccionadas)))
 
     else:
         opciones_tipo_vehiculo, opciones_tipo_combustible, opciones_provincia = [], [], []
 
-    # Renderizar los widgets con las opciones completas
+    # Renderiza los widgets con las opciones completas
     tipos_vehiculo = st.multiselect("Tipo de vehículo", options=opciones_tipo_vehiculo, key="filter_vehiculo")
     tipos_combustible = st.multiselect("Tipo de combustible", options=opciones_tipo_combustible, key="filter_combustible")
     provincia = st.multiselect("Provincia", options=opciones_provincia, key="filter_provincia")
-
-    parametro = None # Ya no usamos un solo parámetro
-
-    # Detectar columnas numéricas relevantes para rangos
-    # Podríamos hacerlo dinámico o fijo según requisitos. Haremos fijo a las 3 principales.
+    
+    # Filtros de rangos para métricas numéricas
     metricas_rango = ["repostado", "distancia", "consumo"]
     rangos_activos = {}
 
     st.subheader("Rangos")
     for metrica in metricas_rango:
         if df is not None and metrica in df.columns:
-            # Calcular min/max
-            # Asegurar numérico primero por si acaso
-            col_data = pd.to_numeric(df[metrica], errors='coerce').dropna()
+            # Calcula el min/max y asegura que el tipo sea numérico
+            datos_columna = pd.to_numeric(df[metrica], errors='coerce').dropna()
             
-            if not col_data.empty:
-                min_val = float(col_data.min())
-                max_val = float(col_data.max())
+            if not datos_columna.empty:
+                valor_min = float(datos_columna.min())
+                valor_max = float(datos_columna.max())
                 
-                # Crear slider si hay variabilidad, o mostrar solo info
-                if min_val < max_val:
-                    # Usar key única por métrica
-                    rango_sel = st.slider(f"Rango {metrica.capitalize()}", min_val, max_val, (min_val, max_val), key=f"slider_{metrica}")
-                    rangos_activos[metrica] = rango_sel
+                if valor_min < valor_max:
+                    rango_seleccionado = st.slider(f"Rango {metrica.capitalize()}", valor_min, valor_max, (valor_min, valor_max), key=f"slider_{metrica}")
+                    rangos_activos[metrica] = rango_seleccionado
                 else:
-                    st.info(f"{metrica.capitalize()}: {min_val}")
+                    st.info(f"{metrica.capitalize()}: {valor_min}")
     
     rango_fechas = st.date_input("Rango de fechas", [])
 
     aplicar = st.button("Aplicar filtros")
 
     if aplicar:
-        # Ya no guardamos parámetro único en session state de esta forma
-        # st.session_state.parametro_actual = parametro
-
-        #Aplicamos los filtros de la columna de la izquierda.
         if df is not None:
-            df_filtrado = aplicar_filtros(
+            datos_filtrados = aplicar_filtros(
                 df,
-                tipos_vehiculo = tipos_vehiculo,
-                tipos_combustible = tipos_combustible,
-                provincia = provincia, # Corregido argumento 'lugar' -> 'provincia'
-                rangos = rangos_activos,
-                fechas = rango_fechas
-                )
-            st.session_state.df_filtrado = df_filtrado
+                tipos_vehiculo=tipos_vehiculo,
+                tipos_combustible=tipos_combustible,
+                provincia=provincia,
+                rangos=rangos_activos,
+                fechas=rango_fechas
+            )
+            st.session_state.datos_filtrados = datos_filtrados
             st.rerun()
 
-# Llamada a la función de fragmento
+# Llamada a la función para mostrar los filtros
 with st.sidebar:
     mostrar_filtros_laterales(df)
 
-# Recuperamos variables clave del estado para el resto de la app
-# parametro_actual ya no es crítico para el filtrado, pero tal vez para gráficos.
-# Dejaremos un default para compatibilidad si algo lo usa.
-if "parametro_actual" not in st.session_state:
-    st.session_state.parametro_actual = "repostado" 
+# Recupera los datos filtrados 
+datos_filtrados = st.session_state.datos_filtrados
+datos_activos = datos_filtrados if datos_filtrados is not None else df
 
-parametro = st.session_state.parametro_actual
+# Crea las distintas pestañas
+tab_general, tab_provincia, tab_vehiculo = st.tabs(["Vista General", "Vista por Provincia", "Detalle Vehículo"])
 
+# Función para mostrar los gráficos repetidos en General y Provincia
+def mostrar_graficos_resumen(datos_locales, clave_sufijo=""):
 
-df_filtrado = st.session_state.df_filtrado  # Recuperamos el dataframe persistente
-
-# Definimos el dataframe activo para todas las pestañas (filtrado o total)
-df_activo = df_filtrado if df_filtrado is not None else df
-
-# CREACIÓN DE PESTAÑAS
-# CREACIÓN DE PESTAÑAS
-tab_general, tab_provincia, tab_vehiculo = st.tabs(["Vista General (Flota)", "Vista por Provincia", "Detalle Vehículo"])
-
-def mostrar_graficos_resumen(df_local, clave_sufijo=""):
-    """
-    Helper para mostrar los gráficos repetidos en General y Provincia.
-    """
-    if df_local is None or df_local.empty:
+    if datos_locales is None or datos_locales.empty:
         st.info("No hay datos para mostrar.")
         return
 
-    # 1. Gráficos Temporales (Repostado y Recorrido)
+    # 1. Gráficos Temporales
     col1, col2 = st.columns(2)
     with col1:
-        if "repostado" in df_local.columns and "fecha" in df_local.columns:
-            fig_rep = grafico_barras_temporal(df_local, "fecha", "repostado", "M", "Repostado Mensual")
+        if "repostado" in datos_locales.columns and "fecha" in datos_locales.columns:
+            fig_rep = grafico_barras_temporal(datos_locales, "fecha", "repostado", "M", "Repostado Mensual")
             if fig_rep: st.plotly_chart(fig_rep, use_container_width=True, key=f"bar_rep_{clave_sufijo}")
     
     with col2:
-        if "distancia" in df_local.columns and "fecha" in df_local.columns:
-            fig_dist = grafico_barras_temporal(df_local, "fecha", "distancia", "M", "Recorrido Mensual (km)")
+        if "distancia" in datos_locales.columns and "fecha" in datos_locales.columns:
+            fig_dist = grafico_barras_temporal(datos_locales, "fecha", "distancia", "M", "Recorrido Mensual (km)")
             if fig_dist: st.plotly_chart(fig_dist, use_container_width=True, key=f"bar_dist_{clave_sufijo}")
             
     st.divider()
     
-    # 2. Tipos de Combustible y Día de Semana
+    # 2. Tipos de Combustible y Día de la Semana
     col3, col4 = st.columns(2)
     with col3:
-        if "tipo_combustible" in df_local.columns:
-            fig_comb = grafico_tarta_distribucion(df_local, "tipo_combustible", "Tipos de Combustible")
+        if "tipo_combustible" in datos_locales.columns:
+            fig_comb = grafico_tarta_distribucion(datos_locales, "tipo_combustible", "Tipos de Combustible")
             if fig_comb: st.plotly_chart(fig_comb, use_container_width=True, key=f"pie_comb_{clave_sufijo}")
             
     with col4:
-        if "fecha" in df_local.columns:
-            fig_sem = grafico_dia_semana(df_local, "fecha")
+        if "fecha" in datos_locales.columns:
+            fig_sem = grafico_dia_semana(datos_locales, "fecha")
             if fig_sem: st.plotly_chart(fig_sem, use_container_width=True, key=f"pie_sem_{clave_sufijo}")
 
     st.divider()
 
-    # 3. Etiqueta o Año Matriculación
-    col5, col6 = st.columns(2)
-    hay_etiqueta = "etiqueta" in df_local.columns
-    hay_anio = "año_matriculacion" in df_local.columns or "anio_matriculacion" in df_local.columns
-    
-    # Normalizar nombre año
-    col_anio = "año_matriculacion" if "año_matriculacion" in df_local.columns else "anio_matriculacion"
-
-    with col5:
-        if hay_etiqueta:
-            fig_eti = grafico_tarta_distribucion(df_local, "etiqueta", "Distribución por Etiqueta")
-            if fig_eti: st.plotly_chart(fig_eti, use_container_width=True, key=f"pie_eti_{clave_sufijo}")
-    
-    with col6:
-        if col_anio in df_local.columns:
-            fig_anio = grafico_tarta_distribucion(df_local, col_anio, "Distribución por Año")
-            if fig_anio: st.plotly_chart(fig_anio, use_container_width=True, key=f"pie_anio_{clave_sufijo}")
-
 with tab_general:
-    if df_activo is not None:
-        st.subheader("Vista General de toda la Flota (Filtrada)")
-        mostrar_graficos_resumen(df_activo, "general")
+    if datos_activos is not None:
+        st.subheader("Vista General de la Flota")
+        mostrar_graficos_resumen(datos_activos, "general")
     else:
         st.info("Carga un archivo para ver los datos.")
 
 with tab_provincia:
-    if df_activo is not None:
+    if datos_activos is not None:
         st.subheader("Vista por Provincia")
         
-        # Como ya garantizamos la columna 'provincia' en la carga, usamos esa directamente.
-        if "provincia" in df_activo.columns:
-            lugares = sorted(df_activo["provincia"].astype(str).unique())
+        if "provincia" in datos_activos.columns:
+            lugares = sorted(datos_activos["provincia"].astype(str).unique())
             lugar_sel = st.selectbox("Selecciona Provincia:", lugares, index=0)
             
             if lugar_sel:
-                df_prov = df_activo[df_activo["provincia"] == lugar_sel]
-                mostrar_graficos_resumen(df_prov, "provincia")
+                datos_prov = datos_activos[datos_activos["provincia"] == lugar_sel]
+                mostrar_graficos_resumen(datos_prov, "provincia")
         else:
-             # Fallback por seguridad si algo falla en la carga
             st.warning("No se encontró columna de Provincia.")
     else:
         st.info("Carga un archivo.")
@@ -269,24 +228,23 @@ with tab_vehiculo:
         st.subheader("Vista Detallada del Vehículo")
         
         # Selector de vehículo
-        # Usamos df_activo que ya incluye los filtros globales (fecha, etc)
-        base_df = df_activo
+        datos_base = datos_activos
         
-        if "vehiculo" in base_df.columns:
-            vehiculos = sorted(base_df["vehiculo"].astype(str).unique())
+        if "vehiculo" in datos_base.columns:
+            vehiculos = sorted(datos_base["vehiculo"].astype(str).unique())
             vehiculo_sel = st.selectbox("Selecciona Vehículo:", vehiculos, index=None, placeholder="Matrícula...")
             
             if vehiculo_sel:
-                df_v = base_df[base_df["vehiculo"].astype(str) == str(vehiculo_sel)]
+                datos_vehiculo = datos_base[datos_base["vehiculo"].astype(str) == str(vehiculo_sel)]
                 
-                # Gráficos mensuales/semanales/anuales
+                # Gráficos mensuales, semanales y anuales
                 periodo = st.radio("Agrupación temporal:", ["Mensual", "Semanal", "Anual"], horizontal=True)
                 if periodo == "Mensual":
-                    per_code = "M"
+                    codigo_periodo = "M"
                 elif periodo == "Semanal":
-                     per_code = "W"
+                     codigo_periodo = "W"
                 else: 
-                     per_code = "Y"
+                     codigo_periodo = "Y"
                 
                 c1, c2 = st.columns(2)
                 with c1:
@@ -300,45 +258,34 @@ with tab_vehiculo:
                          
                 st.divider()
                 
-                # Gráfico Consumo (más o menos)
+                # Gráfico Consumo
                 st.subheader("Tendencia de Consumo")
-                if "consumo" in df_v.columns or ("repostado" in df_v.columns and "distancia" in df_v.columns):
-                    # Si no hay consumo, calculamos al vuelo para el gráfico? 
-                    # grafico_lineal_consumo ya requiere columna.
-                    # Vamos a intentar asegurar que 'consumo' exista o se puede pasar 'repostado' como proxy si no
-                    col_con = "consumo"
-                    if "consumo" not in df_v.columns and "repostado" in df_v.columns: 
-                        # Si no hay consumo explicitamente, usamos repostado como metrica de gasto?? 
-                        # El usuario dijo "si el consumo va a más o menos".
-                        # Si no existe, avisamos.
-                        if "consumo" not in df_v.columns:
-                            st.warning("No se encontró columna 'consumo'. Se muestra evolución de 'repostado'.")
-                            col_con = "repostado"
+                if "consumo" in datos_vehiculo.columns or ("repostado" in datos_vehiculo.columns and "distancia" in datos_vehiculo.columns):
+                    columna_consumo = "consumo"
+                    if "consumo" not in datos_vehiculo.columns and "repostado" in datos_vehiculo.columns:
+                        st.warning("No se encontró columna 'consumo'. Se muestra evolución de 'repostado'.")
+                        columna_consumo = "repostado"
 
-                    f_trend = grafico_lineal_consumo(df_v, "fecha", col_con)
-                    if f_trend: st.plotly_chart(f_trend, use_container_width=True, key="v_trend")
+                    tendencia = grafico_lineal_consumo(datos_vehiculo, "fecha", columna_consumo)
+                    if tendencia: st.plotly_chart(tendencia, use_container_width=True, key="v_trend")
                 
                 st.divider()
                 st.subheader("Comparativa con Modelo")
-                # Gráfico comparativo
-                # Todos los vehículos del mismo modelo en tono claro
-                # Usamos df_activo para que la comparativa también respete los filtros (ej: rango de fechas)
-                metrics = [c for c in ["repostado", "distancia", "consumo"] if c in df_activo.columns]
-                if metrics:
-                    metrica_comp = st.selectbox("Métrica a comparar:", metrics)
-                    f_comp = grafico_comparativo_modelo(df_activo, vehiculo_sel, "fecha", metrica_comp, "tipo_vehiculo")
-                    # Nota: asumo 'tipo_vehiculo' como modelo, si hay columna 'modelo' mejor.
+                metricas = [c for c in ["repostado", "distancia", "consumo"] if c in datos_activos.columns]
+                if metricas:
+                    metrica_comp = st.selectbox("Métrica a comparar:", metricas)
+                    f_comp = grafico_comparativo_modelo(datos_activos, vehiculo_sel, "fecha", metrica_comp, "tipo_vehiculo")
                     if f_comp: st.plotly_chart(f_comp, use_container_width=True, key="v_comp")
                     else: st.info("No se pudo generar la comparativa (faltan datos del modelo).")
                 
                 # Mapa
                 st.divider()
                 st.subheader("Mapa de Repostajes")
-                if "latitud" in df_v.columns:
-                     f_map = mapa_repostajes(df_v, vehiculo_sel)
+                if "latitud" in datos_vehiculo.columns:
+                     f_map = mapa_repostajes(datos_vehiculo, vehiculo_sel)
                      if f_map: st.pydeck_chart(f_map)
                 
             else:
                 st.info("Selecciona un vehículo.")
         else:
-            st.warning("No se encontró columna 'vehiculo'.")
+            st.warning("No se encontró la columna 'vehiculo'.")
