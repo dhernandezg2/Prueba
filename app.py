@@ -248,12 +248,12 @@ with tab_vehiculo:
                 
                 c1, c2 = st.columns(2)
                 with c1:
-                     if "repostado" in df_v.columns:
-                         f1 = grafico_barras_temporal(df_v, "fecha", "repostado", per_code, f"Repostado ({periodo})")
+                     if "repostado" in datos_vehiculo.columns:
+                         f1 = grafico_barras_temporal(datos_vehiculo, "fecha", "repostado", codigo_periodo, f"Repostado ({periodo})")
                          if f1: st.plotly_chart(f1, use_container_width=True, key="v_rep")
                 with c2:
-                    if "distancia" in df_v.columns:
-                         f2 = grafico_barras_temporal(df_v, "fecha", "distancia", per_code, f"Recorrido ({periodo})")
+                    if "distancia" in datos_vehiculo.columns:
+                         f2 = grafico_barras_temporal(datos_vehiculo, "fecha", "distancia", codigo_periodo, f"Recorrido ({periodo})")
                          if f2: st.plotly_chart(f2, use_container_width=True, key="v_dist")
                          
                 st.divider()
