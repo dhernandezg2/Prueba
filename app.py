@@ -7,10 +7,7 @@ if "datos_filtrados" not in st.session_state:
 # Funciones externas
 from modulos.filtros import aplicar_filtros
 from modulos.graficos import (
-    Grafico_lineal_parametros,
     mapa_repostajes,
-    grafico_general_repostajes,
-    grafico_top_vehiculos,
     grafico_barras_temporal,
     grafico_tarta_distribucion,
     grafico_dia_semana,
@@ -176,7 +173,7 @@ def mostrar_graficos_resumen(datos_locales, clave_sufijo=""):
     col1, col2 = st.columns(2)
     with col1:
         if "repostado" in datos_locales.columns and "fecha" in datos_locales.columns:
-            fig_rep = grafico_barras_temporal(datos_locales, "fecha", "repostado", "M", "Repostado Mensual")
+            fig_rep = grafico_barras_temporal(datos_locales, "fecha", "repostado", "M", "Repostado Mensual (l)")
             if fig_rep: st.plotly_chart(fig_rep, use_container_width=True, key=f"bar_rep_{clave_sufijo}")
     
     with col2:
