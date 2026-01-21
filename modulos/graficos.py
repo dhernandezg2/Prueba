@@ -23,6 +23,10 @@ def mapa_repostajes(df, vehiculo, estilo="Claro"):
     if df_vehiculo.empty:
         return None
     
+    # Optimización: Limitar a los últimos 100 repostajes para mejor rendimiento
+    if len(df_vehiculo) > 100:
+        df_vehiculo = df_vehiculo.nlargest(100, 'fecha') if 'fecha' in df_vehiculo.columns else df_vehiculo.tail(100)
+    
     # Configuración de la vista inicial centrada en los datos
     lat_center = df_vehiculo["latitud"].mean()
     lon_center = df_vehiculo["longitud"].mean()
@@ -30,30 +34,18 @@ def mapa_repostajes(df, vehiculo, estilo="Claro"):
     view_state = pdk.ViewState(
         latitude=lat_center,
         longitude=lon_center,
-        zoom=15,
-        pitch=60,
+        zoom=12,
+        pitch=45,
         bearing=0
     )
 
-    # Capas del mapa
-    layers = []
-
-    # Si es "Oscuro", añadimos la capa de imágenes satelitales como base
+    # Estilo del mapa (simplificado para mejor rendimiento)
     if estilo == "Oscuro":
-        satellite_layer = pdk.Layer(
-            "TileLayer",
-            data="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-            min_zoom=0,
-            max_zoom=19,
-            tileSize=256,
-            render_sub_layers=True,
-            refinement_strategy="no-overlap"
-        )
-        layers.append(satellite_layer)
-        map_style = None
+        map_style = "mapbox://styles/mapbox/dark-v10"
     else:
-        # Por defecto Claro
         map_style = "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
+    
+    layers = []
 
     # Capa de puntos de repostaje
     points_layer = pdk.Layer(
