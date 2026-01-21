@@ -23,27 +23,28 @@ def mapa_repostajes(df, vehiculo, estilo="Claro"):
     if df_vehiculo.empty:
         return None
     
-    # Optimización: Limitar a los últimos 100 repostajes para mejor rendimiento
-    if len(df_vehiculo) > 100:
-        df_vehiculo = df_vehiculo.nlargest(100, 'fecha') if 'fecha' in df_vehiculo.columns else df_vehiculo.tail(100)
+    # Optimización agresiva: Solo 30 puntos más recientes para máximo rendimiento
+    if len(df_vehiculo) > 30:
+        df_vehiculo = df_vehiculo.nlargest(30, 'fecha') if 'fecha' in df_vehiculo.columns else df_vehiculo.tail(30)
     
     # Configuración de la vista inicial centrada en los datos
     lat_center = df_vehiculo["latitud"].mean()
     lon_center = df_vehiculo["longitud"].mean()
 
+    # Vista 2D (pitch=0) para máximo rendimiento
     view_state = pdk.ViewState(
         latitude=lat_center,
         longitude=lon_center,
-        zoom=12,
-        pitch=45,
+        zoom=11,
+        pitch=0,
         bearing=0
     )
 
-    # Estilo del mapa (simplificado para mejor rendimiento)
+    # Estilo minimalista del mapa
     if estilo == "Oscuro":
         map_style = "mapbox://styles/mapbox/dark-v10"
     else:
-        map_style = "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
+        map_style = "mapbox://styles/mapbox/light-v10"
     
     layers = []
 
@@ -52,27 +53,18 @@ def mapa_repostajes(df, vehiculo, estilo="Claro"):
         "ScatterplotLayer",
         data=df_vehiculo,
         get_position='[longitud, latitud]',
-        get_color='[255, 50, 50, 220]', #Color del punto de repostaje.
-        get_radius=20, #Radio del punto de repostaje.
-        get_line_color=[255, 255, 255], #Color del borde del punto de repostaje.
-        line_width_min_pixels=2, 
-        pickable=True,
-        auto_highlight=True
+        get_color='[255, 50, 50, 200]',
+        get_radius=12,
+        pickable=False,
+        auto_highlight=False
     )
     layers.append(points_layer)
 
-    #Tooltip personalizado
-    tooltip = {
-        "html": "<b>Dirección:</b> {direccion}<br/><b>Repostado:</b> {repostado} L",
-        "style": {"backgroundColor": "rgba(255,255,255,0.9)", "color": "#333", "border": "2px solid #ff3232"}
-    }
-
-    # Creamos el objeto
+    # Creamos el objeto (sin tooltip para mejor rendimiento)
     mapa = pdk.Deck(
         map_style=map_style,
         initial_view_state=view_state,
-        layers=layers,
-        tooltip=tooltip
+        layers=layers
     )
     return mapa
 
