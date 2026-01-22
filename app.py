@@ -280,7 +280,7 @@ with tab_vehiculo:
                 st.subheader("Mapa de Repostajes")
                 if "latitud" in datos_vehiculo.columns:
                      f_map = mapa_repostajes(datos_vehiculo, vehiculo_sel)
-                     if f_map: st.pydeck_chart(f_map)
+                     if f_map: st.plotly_chart(f_map, use_container_width=True, key="v_map")
                 
             else:
                 st.info("Selecciona un vehículo.")

@@ -1,9 +1,8 @@
 import plotly.express as px
 import plotly.graph_objects as go
-import pydeck as pdk
 import pandas as pd
 
-#Mapa interactivo 3D con Pydeck
+#Mapa interactivo con Plotly Scattermapbox
 def mapa_repostajes(df, vehiculo, estilo="Claro"):
 
     if df is None or df.empty:
@@ -23,50 +22,43 @@ def mapa_repostajes(df, vehiculo, estilo="Claro"):
     if df_vehiculo.empty:
         return None
     
-    # Optimización agresiva: Solo 30 puntos más recientes para máximo rendimiento
-    if len(df_vehiculo) > 30:
-        df_vehiculo = df_vehiculo.nlargest(30, 'fecha') if 'fecha' in df_vehiculo.columns else df_vehiculo.tail(30)
+    # Limitar puntos para mejor rendimiento
+    if len(df_vehiculo) > 100:
+        df_vehiculo = df_vehiculo.nlargest(100, 'fecha') if 'fecha' in df_vehiculo.columns else df_vehiculo.tail(100)
     
     # Configuración de la vista inicial centrada en los datos
     lat_center = df_vehiculo["latitud"].mean()
     lon_center = df_vehiculo["longitud"].mean()
 
- 
-    view_state = pdk.ViewState(
-        latitude=lat_center,
-        longitude=lon_center,
+    # Crear el mapa con Plotly
+    fig = px.scatter_mapbox(
+        df_vehiculo,
+        lat="latitud",
+        lon="longitud",
         zoom=11,
-        pitch=0,
-        bearing=0
+        height=500,
+        color_discrete_sequence=["#EF553B"]
     )
-
     
-    if estilo == "Oscuro":
-        map_style = "mapbox://styles/mapbox/dark-v10"
-    else:
-        map_style = "mapbox://styles/mapbox/light-v10"
+    # Configurar el estilo del mapa
+    fig.update_layout(
+        mapbox_style="open-street-map",
+        mapbox=dict(
+            center=dict(lat=lat_center, lon=lon_center),
+            zoom=11
+        ),
+        margin={"r":0,"t":0,"l":0,"b":0},
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)'
+    )
     
-    layers = []
-
-    # Capa de puntos de repostaje
-    points_layer = pdk.Layer(
-        "ScatterplotLayer",
-        data=df_vehiculo,
-        get_position='[longitud, latitud]',
-        get_color='[255, 50, 50, 200]',
-        get_radius=12,
-        pickable=False,
-        auto_highlight=False
+    # Actualiza el tamaño de los marcadores
+    fig.update_traces(
+        marker=dict(size=10),
+        hovertemplate='<b>Repostaje</b><br>Lat: %{lat}<br>Lon: %{lon}<extra></extra>'
     )
-    layers.append(points_layer)
-
-    # Creamos el objeto (sin tooltip para mejor rendimiento)
-    mapa = pdk.Deck(
-        map_style=map_style,
-        initial_view_state=view_state,
-        layers=layers
-    )
-    return mapa
+    
+    return fig
 
 """
 Genera un grafico de barras agrupado por tiempo.
