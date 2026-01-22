@@ -31,7 +31,7 @@ def mapa_repostajes(df, vehiculo, estilo="Claro"):
     lat_center = df_vehiculo["latitud"].mean()
     lon_center = df_vehiculo["longitud"].mean()
 
-    # Vista 2D (pitch=0) para máximo rendimiento
+ 
     view_state = pdk.ViewState(
         latitude=lat_center,
         longitude=lon_center,
@@ -40,7 +40,7 @@ def mapa_repostajes(df, vehiculo, estilo="Claro"):
         bearing=0
     )
 
-    # Estilo minimalista del mapa
+    
     if estilo == "Oscuro":
         map_style = "mapbox://styles/mapbox/dark-v10"
     else:
