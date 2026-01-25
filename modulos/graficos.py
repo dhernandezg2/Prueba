@@ -30,7 +30,7 @@ def mapa_repostajes(df, vehiculo, estilo="Claro"):
     lat_center = df_vehiculo["latitud"].mean()
     lon_center = df_vehiculo["longitud"].mean()
 
-    # Crear el mapa con Plotly
+    # Crea el mapa con Plotly
     fig = px.scatter_mapbox(
         df_vehiculo,
         lat="latitud",
