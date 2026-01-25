@@ -346,3 +346,37 @@ def grafico_comparativo_modelo(df_total, vehiculo_sel, col_fecha, col_metrica, c
     )
     
     return fig
+
+"""
+Muestra el top de vehículos por consumo, recorrido y repostado.
+"""
+def mostrar_top_vehiculos(df, top_n=5):
+    
+    if df is None or df.empty:
+        return None
+    
+    if "vehiculo" not in df.columns:
+        return None
+    
+    # Preparamos un diccionario para almacenar los resultados
+    resultados = {}
+    
+    # Top vehículos por consumo
+    if "consumo" in df.columns:
+        top_consumo = df.groupby("vehiculo")["consumo"].sum().nlargest(top_n).reset_index()
+        top_consumo.columns = ["Vehículo", "Total Consumo (l/100km)"]
+        resultados["consumo"] = top_consumo
+    
+    # Top vehículos por recorrido
+    if "distancia" in df.columns:
+        top_recorrido = df.groupby("vehiculo")["distancia"].sum().nlargest(top_n).reset_index()
+        top_recorrido.columns = ["Vehículo", "Total Recorrido (km)"]
+        resultados["recorrido"] = top_recorrido
+    
+    # Top vehículos por repostado
+    if "repostado" in df.columns:
+        top_repostado = df.groupby("vehiculo")["repostado"].sum().nlargest(top_n).reset_index()
+        top_repostado.columns = ["Vehículo", "Total Repostado (l)"]
+        resultados["repostado"] = top_repostado
+    
+    return resultados

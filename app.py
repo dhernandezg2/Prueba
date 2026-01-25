@@ -12,7 +12,8 @@ from modulos.graficos import (
     grafico_tarta_distribucion,
     grafico_dia_semana,
     grafico_lineal_consumo,
-    grafico_comparativo_modelo
+    grafico_comparativo_modelo,
+    mostrar_top_vehiculos
 )
 from modulos.utilidades import set_star_background
 
@@ -194,6 +195,30 @@ def mostrar_graficos_resumen(datos_locales, clave_sufijo=""):
         if "fecha" in datos_locales.columns:
             fig_sem = grafico_dia_semana(datos_locales, "fecha")
             if fig_sem: st.plotly_chart(fig_sem, use_container_width=True, key=f"pie_sem_{clave_sufijo}")
+
+    st.divider()
+    
+    # 3. Top Vehículos
+    top_vehiculos = mostrar_top_vehiculos(datos_locales, top_n=5)
+    if top_vehiculos:
+        st.subheader("🏆 Top Vehículos")
+        
+        col_top1, col_top2, col_top3 = st.columns(3)
+        
+        with col_top1:
+            if "consumo" in top_vehiculos:
+                st.markdown("**Mayor Consumo**")
+                st.dataframe(top_vehiculos["consumo"], hide_index=True, use_container_width=True)
+        
+        with col_top2:
+            if "recorrido" in top_vehiculos:
+                st.markdown("**Mayor Recorrido**")
+                st.dataframe(top_vehiculos["recorrido"], hide_index=True, use_container_width=True)
+        
+        with col_top3:
+            if "repostado" in top_vehiculos:
+                st.markdown("**Mayor Repostado**")
+                st.dataframe(top_vehiculos["repostado"], hide_index=True, use_container_width=True)
 
     st.divider()
 
