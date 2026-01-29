@@ -364,7 +364,7 @@ def mostrar_top_vehiculos(df, top_n=5):
     # Top vehículos por consumo
     if "consumo" in df.columns:
         top_consumo = df.groupby("vehiculo")["consumo"].sum().nlargest(top_n).reset_index()
-        top_consumo.columns = ["Vehículo", "Total Consumo (l/100km)"]
+        top_consumo.columns = ["Vehículo", "Total Consumo (l/km)"]
         resultados["consumo"] = top_consumo
     
     # Top vehículos por recorrido

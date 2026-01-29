@@ -199,9 +199,10 @@ def mostrar_graficos_resumen(datos_locales, clave_sufijo=""):
     st.divider()
     
     # 3. Top Vehículos
-    top_vehiculos = mostrar_top_vehiculos(datos_locales, top_n=5)
+    st.subheader("Top Vehículos")
+    num_vehiculos = st.slider("Número de vehículos a mostrar:", min_value=5, max_value=20, value=5, key=f"slider_top_{clave_sufijo}")
+    top_vehiculos = mostrar_top_vehiculos(datos_locales, top_n=num_vehiculos)
     if top_vehiculos:
-        st.subheader("🏆 Top Vehículos")
         
         col_top1, col_top2, col_top3 = st.columns(3)
         
