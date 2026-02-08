@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import streamlit_folium
 
 if "datos_filtrados" not in st.session_state:
     st.session_state.datos_filtrados = None
@@ -301,12 +302,13 @@ with tab_vehiculo:
                     if f_comp: st.plotly_chart(f_comp, use_container_width=True, key="v_comp")
                     else: st.info("No se pudo generar la comparativa (faltan datos del modelo).")
                 
-                # Mapa
+            # Mapa
                 st.divider()
                 st.subheader("Mapa de Repostajes")
                 if "latitud" in datos_vehiculo.columns:
                      f_map = mapa_repostajes(datos_vehiculo, vehiculo_sel)
-                     if f_map: st.plotly_chart(f_map, use_container_width=True, key="v_map")
+                     if f_map: 
+                         streamlit_folium.st_folium(f_map, width=725, height=500)
                 
             else:
                 st.info("Selecciona un vehículo.")

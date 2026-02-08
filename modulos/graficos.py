@@ -1,8 +1,7 @@
-import plotly.express as px
-import plotly.graph_objects as go
-import pandas as pd
+import folium
+from folium.plugins import MarkerCluster
 
-#Mapa interactivo con Plotly Scattermapbox
+#Mapa interactivo con Folium y MarkerCluster
 def mapa_repostajes(df, vehiculo, estilo="Claro"):
 
     if df is None or df.empty:
@@ -22,43 +21,32 @@ def mapa_repostajes(df, vehiculo, estilo="Claro"):
     if df_vehiculo.empty:
         return None
     
-    # Limitar puntos para mejor rendimiento
-    if len(df_vehiculo) > 100:
-        df_vehiculo = df_vehiculo.nlargest(100, 'fecha') if 'fecha' in df_vehiculo.columns else df_vehiculo.tail(100)
-    
     # Configuración de la vista inicial centrada en los datos
     lat_center = df_vehiculo["latitud"].mean()
     lon_center = df_vehiculo["longitud"].mean()
 
-    # Crea el mapa con Plotly
-    fig = px.scatter_mapbox(
-        df_vehiculo,
-        lat="latitud",
-        lon="longitud",
-        zoom=11,
-        height=500,
-        color_discrete_sequence=["#EF553B"]
-    )
-    
-    # Configurar el estilo del mapa
-    fig.update_layout(
-        mapbox_style="open-street-map",
-        mapbox=dict(
-            center=dict(lat=lat_center, lon=lon_center),
-            zoom=11
-        ),
-        margin={"r":0,"t":0,"l":0,"b":0},
-        paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(0,0,0,0)'
-    )
-    
-    # Actualiza el tamaño de los marcadores
-    fig.update_traces(
-        marker=dict(size=10),
-        hovertemplate='<b>Repostaje</b><br>Lat: %{lat}<br>Lon: %{lon}<extra></extra>'
-    )
-    
-    return fig
+    # Crea el mapa con Folium
+    m = folium.Map(location=[lat_center, lon_center], zoom_start=6)
+
+    # Agrupar marcadores
+    marker_cluster = MarkerCluster().add_to(m)
+
+    for idx, row in df_vehiculo.iterrows():
+        # Construir tooltip con info
+        tooltip_text = f"<b>Fecha:</b> {row.get('fecha', 'N/A')}<br>"
+        if 'repostado' in row:
+            tooltip_text += f"<b>Litros:</b> {row['repostado']}<br>"
+        if 'coste' in row:
+            tooltip_text += f"<b>Coste:</b> {row['coste']}€"
+
+        folium.Marker(
+            location=[row['latitud'], row['longitud']],
+            tooltip="Ver detalles",
+            popup=folium.Popup(tooltip_text, max_width=300),
+            icon=folium.Icon(color="red", icon="gas-pump", prefix="fa")
+        ).add_to(marker_cluster)
+        
+    return m
 
 """
 Genera un grafico de barras agrupado por tiempo.
