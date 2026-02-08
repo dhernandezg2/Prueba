@@ -1,7 +1,11 @@
 import folium
 from folium.plugins import MarkerCluster
+import plotly.express as px
+import plotly.graph_objects as go
+import pandas as pd
 
-#Mapa interactivo con Folium y MarkerCluster
+
+#Mapa interactivo
 def mapa_repostajes(df, vehiculo, estilo="Claro"):
 
     if df is None or df.empty:
