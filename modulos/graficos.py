@@ -35,6 +35,9 @@ def mapa_repostajes(df, vehiculo, estilo="Claro"):
     # Agrupar marcadores
     marker_cluster = MarkerCluster().add_to(m)
 
+    # VARIABLES DE CONFIGURACIÓN
+    color_marcador = "red" 
+    
     for idx, row in df_vehiculo.iterrows():
         # Construir tooltip con info
         tooltip_text = f"<b>Fecha:</b> {row.get('fecha', 'N/A')}<br>"
@@ -47,8 +50,13 @@ def mapa_repostajes(df, vehiculo, estilo="Claro"):
             location=[row['latitud'], row['longitud']],
             tooltip="Ver detalles",
             popup=folium.Popup(tooltip_text, max_width=300),
-            icon=folium.Icon(color="red", icon="gas-pump", prefix="fa")
+            icon=folium.Icon(color=color_marcador, icon="gas-pump", prefix="fa")
         ).add_to(marker_cluster)
+
+    # Ajustar el zoom automáticamente
+    sw = df_vehiculo[['latitud', 'longitud']].min().values.tolist()
+    ne = df_vehiculo[['latitud', 'longitud']].max().values.tolist()
+    m.fit_bounds([sw, ne]) 
         
     return m
 

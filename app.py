@@ -308,7 +308,7 @@ with tab_vehiculo:
                 if "latitud" in datos_vehiculo.columns:
                      f_map = mapa_repostajes(datos_vehiculo, vehiculo_sel)
                      if f_map: 
-                         streamlit_folium.st_folium(f_map, width=1200, height=700)
+                         streamlit_folium.st_folium(f_map, use_container_width=True, height=700)
                 
             else:
                 st.info("Selecciona un vehículo.")
